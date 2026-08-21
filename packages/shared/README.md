@@ -1,5 +1,5 @@
 # `packages/shared`
 
-Tipos y contratos compartidos entre backend, Telegram y Expo.
+Tipos y contratos compartidos entre backend, Telegram y Expo: `AirState`, `AirMode`, `FanSpeed`, IDs de dispositivo y topics MQTT.
 
-Aún **no hay código**. Aquí vivirán `AirState`, `AirMode`, `FanSpeed`, IDs de dispositivo y payloads MQTT/REST descritos en [`SPECS.md`](../../docs/SPECS.md).
+El backend los importa como `@smart-ac/shared`.

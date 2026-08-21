@@ -163,10 +163,10 @@ publish:   smartac/device/+/state
 
 **Salida:**
 
-- [ ] `curl` cambia estado vía mock sin ESP32
+- [x] `curl` cambia estado vía mock sin ESP32
 - [ ] `curl` cambia un aire real si el ESP32 está en MQTT
-- [ ] Secretos solo por entorno
-- [ ] `GET /health` responde sin secreto
+- [x] Secretos solo por entorno
+- [x] `GET /health` responde sin secreto
 
 **Paralelo permitido:** empezar Telegram/Expo contra mock.
 

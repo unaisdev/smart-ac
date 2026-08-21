@@ -1,0 +1,14 @@
+{
+  "name": "smart-ac",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @smart-ac/backend dev",
+    "start": "pnpm --filter @smart-ac/backend start",
+    "test": "pnpm --filter @smart-ac/backend test",
+    "compose:up": "docker compose -f docker/docker-compose.yml up --build"
+  }
+}
