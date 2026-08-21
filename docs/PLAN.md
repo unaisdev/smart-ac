@@ -191,6 +191,8 @@ publish:   smartac/device/+/state
 - [x] Funciona contra mock
 - [ ] Funciona contra ESP32
 
+Wizard `/schedule`: aire → hora (p. ej. 08:00) → antelación (p. ej. 1 h antes) → una vez / diario → estado deseado. El proceso Node dispara la orden en hora de Madrid.
+
 ---
 
 ## Fase 8 — Expo
@@ -221,7 +223,7 @@ publish:   smartac/device/+/state
 Solo cuando el MVP de la spec esté tildado.
 
 - WebSocket hacia la app
-- Timers y programación horaria (el backend ejecuta, no el móvil)
+- Timers en Expo (el backend ya ejecuta los de Telegram)
 - Escenas, favoritos, historial
 - Temperatura ambiente / sensores
 - Integración Home Assistant

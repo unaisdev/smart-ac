@@ -7,6 +7,7 @@ export function homeKeyboard(airs: AirConditionerView[]): InlineKeyboard {
     const icon = air.id === 'ac-dormitorio' ? '🛏' : '🛋';
     keyboard.text(`${icon} ${air.name}`, `s:${air.id}`).row();
   }
+  keyboard.text('⏰ Programar', 'prg:new').text('📋 Programas', 'prg:list');
   return keyboard;
 }
 

@@ -1,5 +1,5 @@
 import type { FastifyBaseLogger } from 'fastify';
-import { Bot, InlineKeyboard, type Context } from 'grammy';
+import { Bot, type Context } from 'grammy';
 import {
   MAX_TEMPERATURE,
   MIN_TEMPERATURE,
@@ -8,10 +8,14 @@ import {
 } from '@smart-ac/shared';
 import type { Config } from '../config.ts';
 import type { AirConditionerService } from '../domain/air-conditioner-service.ts';
+import type { ScheduleService } from '../domain/schedule-service.ts';
 import { isAuthorizedTelegramUser } from './auth.ts';
 import { formatControlText, formatHomeText } from './copy.ts';
+import { editSafe } from './edit-message.ts';
 import { controlKeyboard, homeKeyboard } from './keyboards.ts';
 import { TelegramLiveViews } from './live-views.ts';
+import { handleScheduleCallback, replyScheduleWizard } from './schedule-bot.ts';
+import { WizardSessions } from './schedule-draft.ts';
 
 const MODES: readonly AirMode[] = ['auto', 'cool', 'dry', 'heat', 'fan'];
 const FANS: readonly FanSpeed[] = ['auto', 'low', 'medium', 'high'];
@@ -23,6 +27,7 @@ export interface TelegramRuntime {
 export async function startTelegramBot(
   config: Config,
   service: AirConditionerService,
+  schedules: ScheduleService,
   logger: FastifyBaseLogger,
 ): Promise<TelegramRuntime | undefined> {
   const token = config.telegramBotToken;
@@ -39,6 +44,7 @@ export async function startTelegramBot(
   const allowed = config.telegramAllowedUserIds;
   const bot = new Bot(token);
   const live = new TelegramLiveViews();
+  const sessions = new WizardSessions();
   const stopListening = service.onChanged(async () => {
     await live.push(bot, service, logger);
   });
@@ -60,7 +66,7 @@ export async function startTelegramBot(
   });
   bot.command('help', async (ctx) => {
     await ctx.reply(
-      'Controla los aires con los botones.\n/start o /airs — lista\n/status — última orden del aire elegido.',
+      'Controla los aires con los botones.\n/start o /airs — lista\n/schedule o /programar — wizard (hora + estado)\n/status — última orden del aire elegido.',
     );
   });
   bot.command('airs', async (ctx) => {
@@ -69,10 +75,29 @@ export async function startTelegramBot(
   bot.command('status', async (ctx) => {
     await replyHome(ctx, service, live);
   });
+  bot.command('schedule', async (ctx) => {
+    await replyScheduleWizard(ctx, service, sessions, live);
+  });
+  bot.command('programar', async (ctx) => {
+    await replyScheduleWizard(ctx, service, sessions, live);
+  });
 
   bot.on('callback_query:data', async (ctx) => {
     const data = ctx.callbackQuery.data;
     try {
+      if (data.startsWith('prg:')) {
+        await handleScheduleCallback({
+          ctx,
+          data,
+          service,
+          schedules,
+          live,
+          sessions,
+          timeZone: config.timeZone,
+        });
+        return;
+      }
+
       if (data === 'l') {
         await editHome(ctx, service, live);
         return;
@@ -162,21 +187,6 @@ function chatMessageIds(ctx: Context): { chatId: number; messageId: number } | u
     return undefined;
   }
   return { chatId, messageId };
-}
-
-async function editSafe(
-  ctx: Context,
-  text: string,
-  reply_markup: InlineKeyboard,
-): Promise<void> {
-  try {
-    await ctx.editMessageText(text, { reply_markup });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!message.includes('message is not modified')) {
-      throw error;
-    }
-  }
 }
 
 type TelegramAction =

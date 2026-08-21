@@ -13,7 +13,7 @@ TELEGRAM_ALLOWED_USER_IDS=123456789
 
 El ID es el número de Telegram (`@userinfobot`), nunca el username. Luego `pnpm --filter @smart-ac/backend dev` o recrear el contenedor `backend`.
 
-`/start` lista los aires. Los botones cambian **estado deseado** (mock). Un usuario fuera de la whitelist recibe el mensaje de permiso denegado.
+`/start` lista los aires. **Programar** o `/schedule` abre el wizard (hora + estado). Los botones cambian **estado deseado** (mock). Un usuario fuera de la whitelist recibe el mensaje de permiso denegado.
 
 ## Arranque local (sin Docker)
 
