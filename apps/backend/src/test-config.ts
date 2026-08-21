@@ -14,6 +14,8 @@ export function testConfig(overrides?: Partial<Config>): Config {
     mqttPassword: undefined,
     mqttControllerId: 'ac-controller',
     mqttAckTimeoutMs: 500,
+    telegramBotToken: undefined,
+    telegramAllowedUserIds: [],
     ...overrides,
   };
 }

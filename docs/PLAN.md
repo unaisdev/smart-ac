@@ -186,9 +186,10 @@ publish:   smartac/device/+/state
 
 **Salida:**
 
-- [ ] Usuario autorizado controla AC #1 y #2
-- [ ] Usuario no autorizado recibe el mensaje de permiso denegado
-- [ ] Funciona contra mock y contra ESP32
+- [x] Usuario autorizado controla AC #1 y #2
+- [x] Usuario no autorizado recibe el mensaje de permiso denegado
+- [x] Funciona contra mock
+- [ ] Funciona contra ESP32
 
 ---
 

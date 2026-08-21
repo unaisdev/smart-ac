@@ -1,8 +1,19 @@
 # `apps/backend`
 
-API REST y dominio de Smart AC. Única pieza que conoce dispositivos, MQTT y SQLite. Telegram se añadirá **en este mismo proceso** en la [fase 7](../../docs/PLAN.md).
+API REST, dominio y **bot de Telegram** (mismo proceso). Spec: [`docs/BACKEND.md`](../../docs/BACKEND.md). Despliegue: [`docs/DEPLOY.md`](../../docs/DEPLOY.md).
 
-Spec: [`docs/BACKEND.md`](../../docs/BACKEND.md). Despliegue: [`docs/DEPLOY.md`](../../docs/DEPLOY.md).
+## Telegram (fase 7)
+
+Long polling local: no hace falta URL pública. En `.env`:
+
+```env
+TELEGRAM_BOT_TOKEN=...          # @BotFather
+TELEGRAM_ALLOWED_USER_IDS=123456789
+```
+
+El ID es el número de Telegram (`@userinfobot`), nunca el username. Luego `pnpm --filter @smart-ac/backend dev` o recrear el contenedor `backend`.
+
+`/start` lista los aires. Los botones cambian **estado deseado** (mock). Un usuario fuera de la whitelist recibe el mensaje de permiso denegado.
 
 ## Arranque local (sin Docker)
 
