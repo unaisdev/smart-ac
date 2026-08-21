@@ -28,3 +28,10 @@ Thumbs.db
 # Logs & coverage
 *.log
 coverage/
+
+# SQLite (runtime data)
+data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm

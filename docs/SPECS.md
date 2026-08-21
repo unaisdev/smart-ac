@@ -2,7 +2,7 @@
 
 Documento de **qué** y **por qué**. El orden de implementación está en [`PLAN.md`](PLAN.md). Los componentes físicos están en [`MATERIALS.md`](MATERIALS.md).
 
-Estado: **borrador para construir**. Aún no hay código.
+Estado: **fase 6 en curso** (API + mock). Firmware, Telegram y Expo aún no.
 
 ---
 

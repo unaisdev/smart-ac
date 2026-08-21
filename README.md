@@ -4,7 +4,7 @@ Control remoto de aires acondicionados **Midea** por infrarrojos, desde Telegram
 
 Proyecto **open source**: cualquiera puede montarlo en casa con un ESP32, un receptor IR y un LED infrarrojo. No hay que abrir el aire ni modificar su electrónica.
 
-> Estado actual: **solo especificación**. No hay código todavía. Empieza por [`docs/SPECS.md`](docs/SPECS.md), [`docs/BACKEND.md`](docs/BACKEND.md), [`docs/DEPLOY.md`](docs/DEPLOY.md), [`docs/PLAN.md`](docs/PLAN.md) y [`docs/MATERIALS.md`](docs/MATERIALS.md).
+> Estado actual: **fase 6 (backend + mock)**. El firmware, Telegram y Expo aún no. Empieza por [`docs/SPECS.md`](docs/SPECS.md), [`docs/BACKEND.md`](docs/BACKEND.md), [`docs/DEPLOY.md`](docs/DEPLOY.md), [`docs/PLAN.md`](docs/PLAN.md) y [`docs/MATERIALS.md`](docs/MATERIALS.md).
 
 ```text
                          INTERNET
@@ -74,7 +74,7 @@ smart-ac/
 └── README.md
 ```
 
-Las carpetas de `apps/`, `packages/`, `firmware/` y `docker/` están vacías a propósito. El código llegará fase a fase, según el [plan](docs/PLAN.md).
+Las carpetas de `apps/telegram-bot`, `apps/mobile` y `firmware/` están vacías a propósito. Backend y `packages/shared` ya tienen código de la [fase 6](docs/PLAN.md).
 
 ## Hardware mínimo
 

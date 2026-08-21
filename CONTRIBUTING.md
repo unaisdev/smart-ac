@@ -2,7 +2,7 @@
 
 Gracias por querer montar, mejorar o documentar este proyecto. Es hardware + software de código abierto: lo útil es que otra persona pueda reproducirlo en su casa.
 
-Este repositorio está ahora mismo en **fase de especificación**. No hay código de aplicación. Las contribuciones más valiosas hoy son:
+Este repositorio está ahora mismo en **fase 6** (backend + mock). Firmware, Telegram y Expo aún no. Las contribuciones más valiosas hoy son:
 
 - aclarar o corregir [`docs/SPECS.md`](docs/SPECS.md)
 - concretar el backend o el despliegue en [`docs/BACKEND.md`](docs/BACKEND.md) y [`docs/DEPLOY.md`](docs/DEPLOY.md)
@@ -10,7 +10,7 @@ Este repositorio está ahora mismo en **fase de especificación**. No hay códig
 - mejorar la lista de materiales y el cableado en [`docs/MATERIALS.md`](docs/MATERIALS.md)
 - anotar mandos Midea / RG10 reales (fotos, capturas IR, modelo del aire)
 
-Cuando exista código, se aplicarán las mismas reglas.
+Cuando exista más código, se aplicarán las mismas reglas.
 
 ## Principios
 
