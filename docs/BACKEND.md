@@ -2,7 +2,7 @@
 
 Documento de **qué es** el backend y **cómo se implementa**. El contrato de producto está en [`SPECS.md`](SPECS.md). El orden de fases está en [`PLAN.md`](PLAN.md). Dónde corre 24/7 está en [`DEPLOY.md`](DEPLOY.md).
 
-Estado: **fase 6 en curso**. Hay API + mock + SQLite. Telegram (fase 7) aún no.
+Estado: **fase 7 en curso**. API + mock + bot Telegram (long polling). Expo y firmware aún no.
 
 ---
 

@@ -1,6 +1,6 @@
 FROM eclipse-mosquitto:2
 
-COPY config/mosquitto.conf /mosquitto/config/mosquitto.conf
+COPY mosquitto/config/mosquitto.conf /mosquitto/config/mosquitto.conf
 
 USER root
 RUN mosquitto_passwd -c -b /mosquitto/config/passwd smartac smartac \

@@ -19,6 +19,8 @@ export interface Config {
   mqttPassword: string | undefined;
   mqttControllerId: string;
   mqttAckTimeoutMs: number;
+  telegramBotToken: string | undefined;
+  telegramAllowedUserIds: number[];
 }
 
 function readString(name: string, fallback?: string): string {
@@ -70,5 +72,22 @@ export function loadConfig(): Config {
     mqttPassword: readOptional('MQTT_PASSWORD'),
     mqttControllerId: process.env.DEVICE_ID ?? 'ac-controller',
     mqttAckTimeoutMs: 8000,
+    telegramBotToken: readOptional('TELEGRAM_BOT_TOKEN'),
+    telegramAllowedUserIds: parseTelegramUserIds(process.env.TELEGRAM_ALLOWED_USER_IDS),
   };
+}
+
+export function parseTelegramUserIds(raw: string | undefined): number[] {
+  if (raw === undefined || raw.trim() === '') {
+    return [];
+  }
+
+  return raw.split(',').map((part) => {
+    const trimmed = part.trim();
+    const id = Number(trimmed);
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new Error(`Invalid TELEGRAM_ALLOWED_USER_IDS entry: ${trimmed}`);
+    }
+    return id;
+  });
 }

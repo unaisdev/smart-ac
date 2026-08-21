@@ -66,7 +66,24 @@ export class AirConditionerService {
       this.insertCommand(id, requestId, state, success);
     }
 
+    if (success) {
+      await this.notifyChanged(id);
+    }
+
     return { ...this.get(id), commandSent: success, requestId };
+  }
+
+  onChanged(listener: (id: string) => Promise<void> | void): () => void {
+    this.changedListeners.add(listener);
+    return () => {
+      this.changedListeners.delete(listener);
+    };
+  }
+
+  private readonly changedListeners = new Set<(id: string) => Promise<void> | void>();
+
+  private async notifyChanged(id: string): Promise<void> {
+    await Promise.all([...this.changedListeners].map((listener) => listener(id)));
   }
 
   private persistDesired(id: string, state: AirState): void {
