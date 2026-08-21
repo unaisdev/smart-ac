@@ -1,0 +1,30 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+secrets/
+
+# Dependencies & build (cuando existan)
+node_modules/
+dist/
+build/
+.turbo/
+.expo/
+.expo-shared/
+*.tsbuildinfo
+
+# Firmware
+firmware/esp32/.pio/
+firmware/esp32/.vscode/
+firmware/esp32/sdkconfig.old
+
+# OS & editors
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Logs & coverage
+*.log
+coverage/
