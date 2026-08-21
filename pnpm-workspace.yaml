@@ -1,3 +1,5 @@
 packages:
   - 'apps/backend'
+  - 'apps/mobile'
   - 'packages/shared'
+  - 'packages/api-client'
