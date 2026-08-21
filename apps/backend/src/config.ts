@@ -21,6 +21,7 @@ export interface Config {
   mqttAckTimeoutMs: number;
   telegramBotToken: string | undefined;
   telegramAllowedUserIds: number[];
+  timeZone: string;
 }
 
 function readString(name: string, fallback?: string): string {
@@ -74,6 +75,7 @@ export function loadConfig(): Config {
     mqttAckTimeoutMs: 8000,
     telegramBotToken: readOptional('TELEGRAM_BOT_TOKEN'),
     telegramAllowedUserIds: parseTelegramUserIds(process.env.TELEGRAM_ALLOWED_USER_IDS),
+    timeZone: process.env.TZ ?? process.env.TIME_ZONE ?? 'Europe/Madrid',
   };
 }
 

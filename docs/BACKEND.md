@@ -56,6 +56,8 @@ apps/backend/
     db/                       # SQLite, migraciones mínimas
     domain/
       AirConditionerService.ts
+      schedule-service.ts     # programas horarios (SQLite)
+      schedule-runner.ts      # tick; dispara setState
     transport/
       AirConditionerTransport.ts   # interfaz
       MockAirConditionerTransport.ts
@@ -68,6 +70,7 @@ apps/backend/
       bot.ts
       auth.ts                 # isAuthorizedTelegramUser()
       keyboards.ts
+      schedule-bot.ts         # wizard /schedule
 ```
 
 ### `AirConditionerService`
@@ -105,6 +108,7 @@ telegram_users     telegram_user_id, created_at
 commands           id, air_conditioner_id, request_id, payload_json, created_at, success
 device_status      air_conditioner_id, desired_state_json, reported_state_json, online, updated_at
 ir_commands        device_id, name, data_json, frequency   # captura RAW, fase 2+
+schedules          id, air_conditioner_id, repeat, hora local, lead, next_execute_at, state_json
 ```
 
 Semilla inicial:
@@ -178,7 +182,7 @@ Nunca commitear valores reales.
 
 No implementar ahora:
 
-- Timers / programación horaria ([SPECS §15](SPECS.md); fase 9)
+- REST de timers (el wizard de Telegram ya persiste y el backend ejecuta)
 - WebSocket hacia Expo
 - NestJS, Postgres, Redis
 - Login social / JWT por usuario

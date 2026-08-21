@@ -15,6 +15,7 @@ services:
       MQTT_USERNAME: smartac
       MQTT_PASSWORD: smartac
       DEVICE_ID: ac-controller
+      TZ: Europe/Madrid
     env_file:
       - ../.env
     volumes:

@@ -6,7 +6,8 @@ import { controlKeyboard, homeKeyboard } from './keyboards.ts';
 
 type TrackedView =
   | { kind: 'home'; chatId: number; messageId: number }
-  | { kind: 'control'; chatId: number; messageId: number; airId: string };
+  | { kind: 'control'; chatId: number; messageId: number; airId: string }
+  | { kind: 'wizard'; chatId: number; messageId: number };
 
 export class TelegramLiveViews {
   private readonly views = new Map<number, TrackedView>();
@@ -19,11 +20,19 @@ export class TelegramLiveViews {
     this.views.set(chatId, { kind: 'control', chatId, messageId, airId });
   }
 
+  trackWizard(chatId: number, messageId: number): void {
+    this.views.set(chatId, { kind: 'wizard', chatId, messageId });
+  }
+
   async push(bot: Bot, service: AirConditionerService, logger: FastifyBaseLogger): Promise<void> {
     const airs = service.list();
     await Promise.all(
       [...this.views.values()].map(async (view) => {
         try {
+          if (view.kind === 'wizard') {
+            return;
+          }
+
           if (view.kind === 'home') {
             await bot.api.editMessageText(view.chatId, view.messageId, formatHomeText(airs), {
               reply_markup: homeKeyboard(airs),

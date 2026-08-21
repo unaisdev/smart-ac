@@ -405,9 +405,10 @@ Comandos mínimos (pero la UI preferida son **botones inline**, no teclear):
 
 ```text
 /start  /help  /airs  /status
-/on     /off   /cool  /heat
-/temp   /fan   /swing /turbo  /eco
+/schedule  /programar
 ```
+
+`/schedule` (alias `/programar`) abre un wizard: aire, hora objetivo, antelación, una vez o diario, y el estado deseado (power, modo, temperatura, fan, swing, turbo, eco, LED). El **backend** ejecuta el programa; no depende de que Telegram esté abierto.
 
 ### Interfaz
 
@@ -597,22 +598,27 @@ El ESP32 se conecta al broker por WiFi (red local o MQTT remoto autenticado). No
 
 ---
 
-## 15. Temporizadores (posterior al MVP)
+## 15. Temporizadores
 
-El **backend** ejecuta los timers. No depender del móvil.
+El **backend** ejecuta los timers (SQLite + tick). No depender del móvil ni de que Telegram esté abierto.
 
 ```ts
-interface AirConditionerTimer {
+interface AirConditionerSchedule {
   id: string;
   airConditionerId: string;
-  action: 'on' | 'off' | 'setState';
-  executeAt: string;
-  state?: AirState;
+  repeat: 'once' | 'daily';
+  targetHour: number;
+  targetMinute: number;
+  leadMinutes: number;
+  executeAt: string; // próxima ejecución, ISO UTC
+  state: AirState;
   enabled: boolean;
 }
 ```
 
-Ejemplos: Dormitorio apagar a las 01:30; Salón encender a las 18:00 en Cool 24 °C.
+Hora civil: `Europe/Madrid` (`TZ`). Ejemplo: levantarse a las 08:00, 1 h antes → orden a las 07:00.
+
+UI: wizard de Telegram (`/schedule`). Expo puede reutilizar el mismo servicio más adelante.
 
 ---
 

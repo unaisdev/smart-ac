@@ -16,6 +16,7 @@ export function testConfig(overrides?: Partial<Config>): Config {
     mqttAckTimeoutMs: 500,
     telegramBotToken: undefined,
     telegramAllowedUserIds: [],
+    timeZone: 'Europe/Madrid',
     ...overrides,
   };
 }
