@@ -8,6 +8,8 @@ interface DevicesState {
   devices: AirConditionerView[];
   isLoading: boolean;
   isMutating: boolean;
+  /** `null` until the first API attempt finishes; then mirrors last request outcome. */
+  isBackendReachable: boolean | null;
   errorMessage: string | null;
   loadDevices: () => Promise<void>;
   setPower: (id: string, power: boolean) => Promise<void>;
@@ -20,19 +22,29 @@ interface DevicesState {
 }
 
 function upsertDevice(devices: AirConditionerView[], next: AirConditionerView): AirConditionerView[] {
-  const index = devices.findIndex((device) => device.id === next.id);
+  const view: AirConditionerView = {
+    id: next.id,
+    name: next.name,
+    location: next.location,
+    desiredState: next.desiredState,
+    reportedState: next.reportedState,
+    online: next.online,
+  };
+  const index = devices.findIndex((device) => device.id === view.id);
   if (index === -1) {
-    return [...devices, next];
+    return [...devices, view];
   }
   const copy = [...devices];
-  copy[index] = next;
+  copy[index] = view;
   return copy;
 }
+
 
 export const useDevicesStore = create<DevicesState>((set, get) => ({
   devices: [],
   isLoading: false,
   isMutating: false,
+  isBackendReachable: null,
   errorMessage: null,
 
   getDevice: (id) => get().devices.find((device) => device.id === id),
@@ -41,10 +53,11 @@ export const useDevicesStore = create<DevicesState>((set, get) => ({
     set({ isLoading: true, errorMessage: null });
     try {
       const devices = await apiClient.listAirConditioners();
-      set({ devices, isLoading: false });
+      set({ devices, isLoading: false, isBackendReachable: true });
     } catch (error) {
       set({
         isLoading: false,
+        isBackendReachable: false,
         errorMessage: error instanceof Error ? error.message : 'No se pudo cargar la lista',
       });
     }
@@ -57,10 +70,12 @@ export const useDevicesStore = create<DevicesState>((set, get) => ({
       set((state) => ({
         devices: upsertDevice(state.devices, result),
         isMutating: false,
+        isBackendReachable: true,
       }));
     } catch (error) {
       set({
         isMutating: false,
+        isBackendReachable: false,
         errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el power',
       });
     }
@@ -73,10 +88,12 @@ export const useDevicesStore = create<DevicesState>((set, get) => ({
       set((state) => ({
         devices: upsertDevice(state.devices, result),
         isMutating: false,
+        isBackendReachable: true,
       }));
     } catch (error) {
       set({
         isMutating: false,
+        isBackendReachable: false,
         errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar la temperatura',
       });
     }
@@ -89,10 +106,12 @@ export const useDevicesStore = create<DevicesState>((set, get) => ({
       set((state) => ({
         devices: upsertDevice(state.devices, result),
         isMutating: false,
+        isBackendReachable: true,
       }));
     } catch (error) {
       set({
         isMutating: false,
+        isBackendReachable: false,
         errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el modo',
       });
     }
@@ -105,10 +124,12 @@ export const useDevicesStore = create<DevicesState>((set, get) => ({
       set((state) => ({
         devices: upsertDevice(state.devices, result),
         isMutating: false,
+        isBackendReachable: true,
       }));
     } catch (error) {
       set({
         isMutating: false,
+        isBackendReachable: false,
         errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el ventilador',
       });
     }
@@ -121,10 +142,12 @@ export const useDevicesStore = create<DevicesState>((set, get) => ({
       set((state) => ({
         devices: upsertDevice(state.devices, result),
         isMutating: false,
+        isBackendReachable: true,
       }));
     } catch (error) {
       set({
         isMutating: false,
+        isBackendReachable: false,
         errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el swing',
       });
     }
@@ -144,10 +167,12 @@ export const useDevicesStore = create<DevicesState>((set, get) => ({
       set((state) => ({
         devices: upsertDevice(state.devices, result),
         isMutating: false,
+        isBackendReachable: true,
       }));
     } catch (error) {
       set({
         isMutating: false,
+        isBackendReachable: false,
         errorMessage: error instanceof Error ? error.message : 'No se pudo actualizar el estado',
       });
     }

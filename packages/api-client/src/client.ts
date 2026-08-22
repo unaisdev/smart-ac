@@ -1,4 +1,11 @@
-import type { AirConditionerView, AirMode, AirState, FanSpeed } from '@smart-ac/shared';
+import type {
+  AirConditionerSchedule,
+  AirConditionerView,
+  AirMode,
+  AirState,
+  CreateScheduleInput,
+  FanSpeed,
+} from '@smart-ac/shared';
 
 export interface SmartAcApiClientOptions {
   baseUrl: string;
@@ -77,7 +84,28 @@ export class SmartAcApiClient {
     });
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  listSchedules(): Promise<AirConditionerSchedule[]> {
+    return this.request<AirConditionerSchedule[]>('GET', '/api/schedules');
+  }
+
+  createSchedule(input: CreateScheduleInput): Promise<AirConditionerSchedule> {
+    return this.request<AirConditionerSchedule>('POST', '/api/schedules', input);
+  }
+
+  updateSchedule(id: string, input: CreateScheduleInput): Promise<AirConditionerSchedule> {
+    return this.request<AirConditionerSchedule>(
+      'PUT',
+      `/api/schedules/${encodeURIComponent(id)}`,
+      input,
+    );
+  }
+
+  deleteSchedule(id: string): Promise<void> {
+    return this.request<void>('DELETE', `/api/schedules/${encodeURIComponent(id)}`);
+  }
+
+
+    private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
       method,
       headers: {

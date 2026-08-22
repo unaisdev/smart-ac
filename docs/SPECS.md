@@ -377,6 +377,31 @@ POST /api/air-conditioners/:id/temperature
 POST /api/air-conditioners/:id/mode
 POST /api/air-conditioners/:id/fan
 POST /api/air-conditioners/:id/swing
+GET  /api/schedules
+POST /api/schedules
+DELETE /api/schedules/:id
+```
+
+Ejemplo `POST /api/schedules`:
+
+```json
+{
+  "airConditionerId": "ac-salon",
+  "repeat": "daily",
+  "targetHour": 8,
+  "targetMinute": 0,
+  "leadMinutes": 60,
+  "state": {
+    "power": true,
+    "mode": "cool",
+    "temperature": 24,
+    "fan": "auto",
+    "swing": false,
+    "turbo": false,
+    "eco": false,
+    "led": true
+  }
+}
 ```
 
 Ejemplo `POST /api/air-conditioners/ac-salon/state`:
@@ -494,13 +519,23 @@ No usar Expo Router salvo que sea necesario.
 **Selección**
 
 ```text
-Mis aires
+Mis aires                    [Programas]
 
 🟢 Salón
    Última orden: COOL · 24°C
 
 🟢 Dormitorio
    Última orden: OFF
+```
+
+**Programas**
+
+Lista de programas activos (misma semántica que Telegram): aire, hora objetivo, antelación, once/daily, estado deseado, próxima ejecución. Crear vía wizard; borrar desde la lista. La ejecución la hace el backend (`ScheduleRunner`), no la app.
+
+**Wizard (Programar)**
+
+```text
+aire → hora objetivo → antelación → once|daily → estado deseado → confirmar
 ```
 
 **Mando**
@@ -606,19 +641,28 @@ El **backend** ejecuta los timers (SQLite + tick). No depender del móvil ni de 
 interface AirConditionerSchedule {
   id: string;
   airConditionerId: string;
+  enabled: boolean;
   repeat: 'once' | 'daily';
   targetHour: number;
   targetMinute: number;
   leadMinutes: number;
-  executeAt: string; // próxima ejecución, ISO UTC
+  executeHour: number;
+  executeMinute: number;
+  nextExecuteAt: string; // próxima ejecución, ISO UTC
+  lastFiredAt: string | null;
   state: AirState;
-  enabled: boolean;
+  createdAt: string;
 }
 ```
 
-Hora civil: `Europe/Madrid` (`TZ`). Ejemplo: levantarse a las 08:00, 1 h antes → orden a las 07:00.
+Hora civil: `Europe/Madrid` (`TZ`). Ejemplo: levantarse a las 08:00, 1 h antes → orden a las 07:00 (`executeHour`/`executeMinute`); `nextExecuteAt` es esa ocurrencia en UTC.
 
-UI: wizard de Telegram (`/schedule`). Expo puede reutilizar el mismo servicio más adelante.
+UI:
+
+- Telegram: wizard `/schedule` / **Programar**
+- Expo: pantallas **Programas** + wizard (misma API `GET/POST/DELETE /api/schedules`)
+
+Tipos en `packages/shared` (`AirConditionerSchedule`, `CreateScheduleInput`).
 
 ---
 

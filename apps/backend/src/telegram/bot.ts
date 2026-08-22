@@ -128,12 +128,18 @@ export async function startTelegramBot(
     }
   });
 
-  void bot.start({
-    drop_pending_updates: true,
-    onStart: (info) => {
-      logger.info(`Telegram long polling as @${info.username}`);
-    },
-  });
+  void bot
+    .start({
+      drop_pending_updates: true,
+      onStart: (info) => {
+        logger.info(`Telegram long polling as @${info.username}`);
+      },
+    })
+    .catch((error) => {
+      // Another process already long-polls this token (409) must not kill the API.
+      logger.error(error, 'Telegram bot stopped; REST/SSE keep running');
+      stopListening();
+    });
 
   return {
     async stop() {

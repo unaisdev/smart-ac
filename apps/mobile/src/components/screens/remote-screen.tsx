@@ -4,7 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDevicesStore } from '../../stores/devices-store';
 import { createStyles } from '../../theme/create-styles';
 import { colors, spacing, typography } from '../../theme/tokens';
-import { formatDesiredSummary, formatModeLabel } from '../../utils/air-labels';
+import { formatDesiredSummary, formatModeHero } from '../../utils/air-labels';
 import { ControlChip } from '../base/control-chip';
 import { FanSelector } from '../base/fan-selector';
 import { ModeSelector } from '../base/mode-selector';
@@ -51,12 +51,14 @@ export const RemoteScreen = ({ route }: Props) => {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.name}>{device.name}</Text>
       <Text style={styles.summary}>Última orden: {summary}</Text>
-      <Text style={styles.online}>{device.online ? 'Controlador en línea' : 'Controlador offline'}</Text>
+      <Text style={styles.online}>
+        {device.online ? '🟢 Controlador en línea' : '⚫ Controlador offline'}
+      </Text>
 
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
 
       <Text style={styles.modeHero}>
-        {desiredState.power ? formatModeLabel(desiredState.mode) : 'OFF'}
+        {desiredState.power ? formatModeHero(desiredState.mode) : '⏻ OFF'}
       </Text>
 
       <TemperatureControl
@@ -91,7 +93,7 @@ export const RemoteScreen = ({ route }: Props) => {
 
       <View style={styles.toggles}>
         <ControlChip
-          label="Swing"
+          label={desiredState.swing ? '↕️ Swing ON' : '↕️ Swing'}
           isSelected={desiredState.swing}
           isDisabled={isMutating || !desiredState.power}
           onPress={() => {
@@ -99,7 +101,7 @@ export const RemoteScreen = ({ route }: Props) => {
           }}
         />
         <ControlChip
-          label="Eco"
+          label={desiredState.eco ? '🌱 Eco ON' : '🌱 Eco'}
           isSelected={desiredState.eco}
           isDisabled={isMutating || !desiredState.power}
           onPress={() => {
@@ -107,7 +109,7 @@ export const RemoteScreen = ({ route }: Props) => {
           }}
         />
         <ControlChip
-          label="Turbo"
+          label={desiredState.turbo ? '⚡ Turbo ON' : '⚡ Turbo'}
           isSelected={desiredState.turbo}
           isDisabled={isMutating || !desiredState.power}
           onPress={() => {
@@ -115,7 +117,7 @@ export const RemoteScreen = ({ route }: Props) => {
           }}
         />
         <ControlChip
-          label="LED"
+          label={desiredState.led ? '💡 LED ON' : '💡 LED'}
           isSelected={desiredState.led}
           isDisabled={isMutating || !desiredState.power}
           onPress={() => {

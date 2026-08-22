@@ -29,6 +29,9 @@ Thumbs.db
 *.log
 coverage/
 
+# Local tooling caches (e.g. Expo Go APK downloads)
+.tmp/
+
 # SQLite (runtime data)
 data/
 *.sqlite

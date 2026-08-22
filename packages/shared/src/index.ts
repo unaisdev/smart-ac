@@ -26,3 +26,10 @@ export type {
   MqttSetStateCommand,
   MqttSetStateResponse,
 } from './mqtt.ts';
+
+export { isScheduleRepeat } from './schedule.ts';
+export type {
+  AirConditionerSchedule,
+  CreateScheduleInput,
+  ScheduleRepeat,
+} from './schedule.ts';

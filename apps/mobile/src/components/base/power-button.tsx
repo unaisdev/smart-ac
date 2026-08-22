@@ -10,12 +10,13 @@ interface Props {
 }
 
 export const PowerButton = ({ isPoweredOn, isDisabled = false, onPress }: Props) => {
-  const label = isPoweredOn ? 'Apagar' : 'Encender';
+  const label = isPoweredOn ? '🔴 Apagar' : '🟢 Encender';
+  const accessibilityLabel = isPoweredOn ? 'Apagar' : 'Encender';
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel}
       disabled={isDisabled}
       onPress={onPress}
       style={({ pressed }) => [
