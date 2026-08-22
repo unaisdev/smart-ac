@@ -1,0 +1,33 @@
+---
+description: PR review checklist for Smart AC (TypeScript, React Native, architecture)
+alwaysApply: false
+---
+
+# Review guidelines
+
+## TypeScript
+
+- Flag `any`, bare `@ts-ignore`, empty interfaces that should be clearer types.
+
+## Exports & files
+
+- Flag `export default`.
+- Flag non-kebab-case file names.
+
+## React / RN
+
+- Flag class components.
+- Flag `React.FC`.
+- Flag missing list keys or index-only keys on dynamic lists.
+
+## Architecture
+
+- Flag MQTT/IR usage from `apps/mobile` or `apps/telegram-bot`.
+- Flag direct `fetch` in components instead of `api-client`.
+- Flag UI copy that asserts real AC power from IR-only sends.
+
+## Quality & security
+
+- Flag secrets, hardcoded credentials, real Telegram IDs.
+- Flag `.only` / unexplained `.skip` in tests.
+- Flag PRs that mix unrelated scopes (e.g. firmware + Expo) without justification.
