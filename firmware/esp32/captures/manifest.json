@@ -1,0 +1,42 @@
+{
+  "remote": "Johnson (usuario)",
+  "notes": "Recaptura completa 2026-08-23: ON/OFF y temp± con aire en estado correcto.",
+  "signals": [
+    {
+      "id": "power-off",
+      "label": "Apagar (Power OFF)",
+      "protocol": "COOLIX",
+      "code": "0xB27BE0",
+      "bits": 24,
+      "file": "power-off.txt"
+    },
+    {
+      "id": "power-on",
+      "label": "Encender (Power ON)",
+      "protocol": "BOSCH144",
+      "code": "0xB24DBF40708FB24DBF40708FD5660000003B",
+      "codeTruncated64": "0x4DB28F7040BF4DB2",
+      "bits": 144,
+      "file": "power-on.txt"
+    },
+    {
+      "id": "temp-up",
+      "label": "Subir temperatura (Temp +)",
+      "protocol": "COOLIX",
+      "code": "0xB2BF50",
+      "bits": 24,
+      "file": "temp-up.txt",
+      "notes": "Recaptura 2026-08-23, aire encendido."
+    },
+    {
+      "id": "temp-down",
+      "label": "Bajar temperatura (Temp -)",
+      "protocol": "BOSCH144",
+      "code": "0xB24DBF40708FB24DBF40708FD5660000003B",
+      "codeTruncated64": "0x4DB28F7040BF4DB2",
+      "bits": 144,
+      "file": "temp-down.txt",
+      "notes": "Recaptura 2026-08-23, aire encendido. Mismo decode hex que power-on; RAW distinto — emitir siempre RAW."
+    }
+  ]
+}
