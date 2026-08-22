@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { isAirState, type AirState } from '@smart-ac/shared';
 import type { SqliteDatabase } from '../db/client.ts';
 import { NotFoundError } from '../http/errors.ts';
-import type { AirConditionerSchedule, CreateScheduleInput, ScheduleRepeat } from './schedule.ts';
+import type { AirConditionerSchedule, CreateScheduleInput } from './schedule.ts';
 import { isScheduleRepeat } from './schedule.ts';
 import { applyLeadMinutes, nextOccurrenceUtc } from './schedule-time.ts';
 
@@ -85,6 +85,46 @@ export class ScheduleService {
         nextExecuteAt,
         stateJson: JSON.stringify(input.state),
         createdAt,
+      });
+
+    return this.get(id);
+  }
+
+  update(id: string, input: CreateScheduleInput, now = new Date()): AirConditionerSchedule {
+    this.get(id);
+    this.assertAirExists(input.airConditionerId);
+    assertClock(input.targetHour, input.targetMinute);
+    assertLead(input.leadMinutes);
+
+    const execute = applyLeadMinutes(input.targetHour, input.targetMinute, input.leadMinutes);
+    const nextExecuteAt = nextOccurrenceUtc(execute.hour, execute.minute, now, this.timeZone).toISOString();
+
+    this.db
+      .prepare(
+        `UPDATE schedules
+         SET air_conditioner_id = @airConditionerId,
+             repeat = @repeat,
+             target_hour = @targetHour,
+             target_minute = @targetMinute,
+             lead_minutes = @leadMinutes,
+             execute_hour = @executeHour,
+             execute_minute = @executeMinute,
+             next_execute_at = @nextExecuteAt,
+             state_json = @stateJson,
+             enabled = 1
+         WHERE id = @id`,
+      )
+      .run({
+        id,
+        airConditionerId: input.airConditionerId,
+        repeat: input.repeat,
+        targetHour: input.targetHour,
+        targetMinute: input.targetMinute,
+        leadMinutes: input.leadMinutes,
+        executeHour: execute.hour,
+        executeMinute: execute.minute,
+        nextExecuteAt,
+        stateJson: JSON.stringify(input.state),
       });
 
     return this.get(id);

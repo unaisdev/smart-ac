@@ -2,7 +2,7 @@
 
 Documento de **qué es** el backend y **cómo se implementa**. El contrato de producto está en [`SPECS.md`](SPECS.md). El orden de fases está en [`PLAN.md`](PLAN.md). Dónde corre 24/7 está en [`DEPLOY.md`](DEPLOY.md).
 
-Estado: **fase 7 en curso**. API + mock + bot Telegram (long polling). Expo y firmware aún no.
+Estado: **fase 7–8 en curso**. API + mock + bot Telegram (long polling; webhook prod pendiente, [`§8`](#8-telegram-long-polling-webhook-y-conflicto-409)). Expo + SSE live sync en desarrollo.
 
 ---
 
@@ -40,7 +40,7 @@ AirConditionerService
 | Bot | grammY (o Telegraf) **en el mismo proceso** | Un contenedor, un puerto |
 | MQTT cliente | `mqtt` (`mqtt.js`) | Cliente Node estándar |
 | DB | SQLite vía `better-sqlite3` | Cero coste, un fichero, backup trivial. Drizzle encima solo si el SQL se vuelve feo |
-| Paquetes | `packages/shared` | `AirState`, `AirMode`, `FanSpeed`, IDs |
+| Paquetes | `packages/shared` | `AirState`, `AirMode`, `FanSpeed`, schedules, IDs |
 
 **No** NestJS, Postgres, Redis ni un servicio aparte para el bot. `apps/telegram-bot/` queda como carpeta reservada por si un día se separa; el MVP vive en `apps/backend`.
 
@@ -64,6 +64,7 @@ apps/backend/
       IrTransport.ts               # MQTT
     http/
       airConditioners.ts      # rutas REST
+      schedules.ts            # GET/POST/DELETE /api/schedules
       health.ts
       auth.ts                 # bearer API_SECRET (Expo)
     telegram/
@@ -128,10 +129,13 @@ Contratos REST: [`SPECS.md` §10](SPECS.md). Añadir:
 
 ```http
 GET  /health
+GET  /api/schedules
+POST /api/schedules
+DELETE /api/schedules/:id
 POST /telegram/webhook
 ```
 
-`GET /health` no exige secreto (Caddy / Oracle lo usan para saber que el proceso vive). El resto de `/api/*` sí.
+`GET /health` no exige secreto (Caddy / Oracle lo usan para saber que el proceso vive). El resto de `/api/*` sí (incluido schedules). Telegram sigue usando `ScheduleService` en proceso; Expo usa las mismas rutas REST.
 
 El webhook de Telegram es la misma app Fastify. grammY se monta en `POST /telegram/webhook`. En local, long polling vale para desarrollar sin TLS.
 
@@ -178,13 +182,54 @@ Nunca commitear valores reales.
 
 ---
 
-## 8. Fuera del MVP
+## 8. Telegram: long polling, webhook y conflicto 409
+
+### Regla operativa
+
+**Un solo consumidor** de updates por bot token. Si dos procesos hacen long polling (`getUpdates`) con el mismo `TELEGRAM_BOT_TOKEN`, Telegram responde **409 Conflict** y solo uno gana.
+
+Casos típicos:
+
+- Backend local + VPS / túnel SSH con el mismo token
+- Dos `pnpm start` o dos contenedores del backend
+- Redeploy sin matar la instancia anterior
+
+Mitigación ya en código: un fallo del long polling **no debe tumbar** la API REST ni SSE (`Telegram bot stopped; REST/SSE keep running`). El bot local queda parado hasta que el otro proceso suelte el token.
+
+En local, si el bot ya corre en remoto: deja `TELEGRAM_BOT_TOKEN` vacío en `.env` o no arranques el bot en esa máquina.
+
+### Producción: webhook (pendiente de implementar)
+
+Hoy el bot usa **long polling** (`bot.start` en `telegram/bot.ts`). En producción el camino previsto es webhook en la misma Fastify:
+
+1. Ruta `POST /telegram/webhook` (mismo proceso, mismo `AirConditionerService`).
+2. Al arrancar (o con un script documentado): `setWebhook` a  
+   `${PUBLIC_BASE_URL}/telegram/webhook`.
+3. TLS terminado en Caddy (ver [`DEPLOY.md`](DEPLOY.md)).
+4. Dejar de llamar a `bot.start()` (long polling) cuando el webhook esté activo — **nunca ambos a la vez**.
+5. Checklist humo: usuario whitelist controla un aire; usuario fuera de lista recibe el mensaje de permiso; un solo proceso Node en el host.
+
+Webhook elimina la pelea de `getUpdates` entre réplicas locales/remotas; sigue haciendo falta **una sola** instancia que registre/reciba el webhook.
+
+### ¿Separar Telegram en otro contenedor?
+
+**No en el MVP** (sigue siendo un proceso). Separar solo tiene sentido más adelante si se quiere:
+
+- reiniciar la API sin cortar el bot, o
+- escalar réplicas HTTP y dejar **exactamente 1** réplica del bot.
+
+Importante: el live update de Telegram hoy usa `AirConditionerService.onChanged` **en memoria**. Otro contenedor **no** vería esos eventos salvo que se añada un bus compartido (p. ej. el bot se suscribe a `GET /api/events` SSE, o Redis/NATS). Sin ese bus, no separar.
+
+Preferencia: **webhook + un contenedor** antes que dos contenedores.
+
+---
+
+## 9. Fuera del MVP
 
 No implementar ahora:
 
-- REST de timers (el wizard de Telegram ya persiste y el backend ejecuta)
-- WebSocket hacia Expo
-- NestJS, Postgres, Redis
+- NestJS, Postgres, Redis (salvo que un split bot/API lo exija)
 - Login social / JWT por usuario
 - Hablar MQTT desde la app móvil
-- Un contenedor o proceso aparte para Telegram
+- Contenedor o proceso aparte para Telegram (ver §8)
+- WebSocket hacia Expo (el sync en vivo de la app va por **SSE** `GET /api/events`; ver cliente en `@smart-ac/api-client`)

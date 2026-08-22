@@ -5,6 +5,8 @@ import { useLiveDeviceSync } from '../../hooks/use-live-device-sync';
 import { colors } from '../../theme/tokens';
 import { DeviceListScreen } from '../screens/device-list-screen';
 import { RemoteScreen } from '../screens/remote-screen';
+import { ScheduleListScreen } from '../screens/schedule-list-screen';
+import { ScheduleWizardScreen } from '../screens/schedule-wizard-screen';
 import { ScreenNames, type RootStackParamList } from './screen-names';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -32,6 +34,7 @@ export const RootNavigator = () => {
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
           headerTitleStyle: { fontWeight: '600' },
+          headerBackButtonDisplayMode: 'minimal',
           contentStyle: { backgroundColor: colors.background },
         }}
       >
@@ -44,6 +47,16 @@ export const RootNavigator = () => {
           name={ScreenNames.Remote}
           component={RemoteScreen}
           options={{ title: 'Mando' }}
+        />
+        <Stack.Screen
+          name={ScreenNames.ScheduleList}
+          component={ScheduleListScreen}
+          options={{ title: 'Programas' }}
+        />
+        <Stack.Screen
+          name={ScreenNames.ScheduleWizard}
+          component={ScheduleWizardScreen}
+          options={{ title: 'Programar' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -11,4 +11,5 @@ const client = new SmartAcApiClient({
 });
 
 await client.listAirConditioners();
+await client.listSchedules();
 ```

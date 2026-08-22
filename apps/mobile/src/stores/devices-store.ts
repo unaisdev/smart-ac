@@ -14,6 +14,8 @@ interface DevicesState {
   devices: AirConditionerView[];
   isLoading: boolean;
   isMutating: boolean;
+  /** `null` until the first API attempt finishes; then mirrors last request outcome. */
+  isBackendReachable: boolean | null;
   isLiveSyncConnected: boolean;
   errorMessage: string | null;
   loadDevices: () => Promise<void>;
@@ -65,12 +67,13 @@ export const useDevicesStore = create<DevicesState>((set, get) => {
       set((state) => ({
         devices: upsertDevice(state.devices, result),
         isMutating: false,
+        isBackendReachable: true,
         errorMessage: result.commandSent ? null : 'No se pudo enviar la orden al controlador',
       }));
       showCommandSuccess(result, change);
     } catch (error) {
       const errorMessage = toErrorMessage(error, fallbackError);
-      set({ isMutating: false, errorMessage });
+      set({ isMutating: false, isBackendReachable: false, errorMessage });
       showCommandError(errorMessage);
     }
   };
@@ -79,6 +82,7 @@ export const useDevicesStore = create<DevicesState>((set, get) => {
     devices: [],
     isLoading: false,
     isMutating: false,
+    isBackendReachable: null,
     isLiveSyncConnected: false,
     errorMessage: null,
 
@@ -120,11 +124,12 @@ export const useDevicesStore = create<DevicesState>((set, get) => {
       set({ isLoading: true, errorMessage: null });
       try {
         const devices = await apiClient.listAirConditioners();
-        set({ devices, isLoading: false });
+        set({ devices, isLoading: false, isBackendReachable: true });
       } catch (error) {
         const errorMessage = toErrorMessage(error, 'No se pudo cargar la lista');
         set({
           isLoading: false,
+          isBackendReachable: false,
           errorMessage,
         });
         showCommandError(errorMessage);

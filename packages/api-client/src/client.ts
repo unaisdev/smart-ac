@@ -1,4 +1,11 @@
-import type { AirConditionerView, AirMode, AirState, FanSpeed } from '@smart-ac/shared';
+import type {
+  AirConditionerSchedule,
+  AirConditionerView,
+  AirMode,
+  AirState,
+  CreateScheduleInput,
+  FanSpeed,
+} from '@smart-ac/shared';
 import {
   createAirConditionerChangeSubscription,
   type AirConditionerChangeHandler,
@@ -80,6 +87,26 @@ export class SmartAcApiClient {
     return this.request<CommandResult>('POST', `/api/air-conditioners/${encodeURIComponent(id)}/swing`, {
       swing,
     });
+  }
+
+  listSchedules(): Promise<AirConditionerSchedule[]> {
+    return this.request<AirConditionerSchedule[]>('GET', '/api/schedules');
+  }
+
+  createSchedule(input: CreateScheduleInput): Promise<AirConditionerSchedule> {
+    return this.request<AirConditionerSchedule>('POST', '/api/schedules', input);
+  }
+
+  updateSchedule(id: string, input: CreateScheduleInput): Promise<AirConditionerSchedule> {
+    return this.request<AirConditionerSchedule>(
+      'PUT',
+      `/api/schedules/${encodeURIComponent(id)}`,
+      input,
+    );
+  }
+
+  deleteSchedule(id: string): Promise<void> {
+    return this.request<void>('DELETE', `/api/schedules/${encodeURIComponent(id)}`);
   }
 
   /**

@@ -7,8 +7,10 @@ export const colors = {
   textMuted: '#9AA8B8',
   accent: '#3D9CF0',
   accentMuted: '#2A6FA8',
+  /** Same mint used by “Todos los servicios en línea”. */
   success: '#3DCF8E',
-  danger: '#E85D5D',
+  /** Matching red (same saturation / lightness family as success). */
+  danger: '#CF5A5A',
   warning: '#E8B84A',
   powerOff: '#5A6573',
 } as const;

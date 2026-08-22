@@ -118,10 +118,11 @@ El YAML concreto no está en el repo hasta la fase 6.
 
 **Telegram**
 
-- Webhook: `https://<host>/telegram/webhook` (misma Fastify).
-- Registrar con `PUBLIC_BASE_URL` al arrancar (o un `setWebhook` documentado).
+- **Producción (objetivo):** webhook `https://<host>/telegram/webhook` en la misma Fastify. Registrar con `setWebhook` usando `PUBLIC_BASE_URL`. No combinar webhook y long polling.
+- **Local / MVP actual:** long polling (`bot.start`). Vale sin TLS.
+- **409 Conflict:** dos procesos con el mismo `TELEGRAM_BOT_TOKEN` haciendo `getUpdates`. Solo uno puede long-pollear. Detalle y checklist de webhook: [`BACKEND.md` §8](BACKEND.md).
 - Whitelist por user ID: [`SPECS.md` §11](SPECS.md).
-
+- No hace falta un contenedor solo para el bot mientras el live update dependa de `onChanged` en proceso.
 ---
 
 ## 6. Backups
@@ -145,6 +146,7 @@ Cuando exista el Compose (fase 6):
 - [ ] `mosquitto_sub` con TLS al hostname:8883 (usuario/contraseña); sin credenciales, rechazo
 - [ ] Puerto 1883 **no** accesible desde Internet
 - [ ] Telegram: usuario de la whitelist controla un aire; otro usuario recibe el mensaje de permiso denegado
+- [ ] Telegram producción: webhook registrado; **un** proceso recibe updates (sin 409 por segundo long poller)
 - [ ] ESP32 en casa: `status` online en el broker **sin** abrir NAT
 
 ---
@@ -166,7 +168,8 @@ Si Oracle falla de forma repetida: **Hetzner CX22** (x86, ~4 €/mes, 2 vCPU / 4
 
 - Abrir 1883 a `0.0.0.0/0`
 - Meter Postgres “por si acaso”
-- Un container extra solo para el bot
+- Un container extra solo para el bot (sin bus de eventos compartido; ver [`BACKEND.md` §8](BACKEND.md))
+- Long polling local **y** long polling/webhook remoto con el mismo token a la vez
 - Ampliar la VM por encima de Always Free
 - Abrir puertos en el router de casa
 - Guardar tokens, WiFi o IDs de Telegram en Git

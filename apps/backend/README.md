@@ -15,6 +15,8 @@ El ID es el número de Telegram (`@userinfobot`), nunca el username. Luego `pnpm
 
 `/start` lista los aires. **Programar** o `/schedule` abre el wizard (hora + estado). Los botones cambian **estado deseado** (mock). Un usuario fuera de la whitelist recibe el mensaje de permiso denegado.
 
+Los mismos programas están en REST (`GET/POST/DELETE /api/schedules`) para Expo.
+
 ## Arranque local (sin Docker)
 
 Desde la raíz del repo:

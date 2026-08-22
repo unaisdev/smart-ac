@@ -12,8 +12,9 @@ import type { AirConditionerView } from '@smart-ac/shared';
 
 import { useDevicesStore } from '../../stores/devices-store';
 import { createStyles } from '../../theme/create-styles';
-import { colors, spacing, typography } from '../../theme/tokens';
+import { colors, radius, spacing, typography } from '../../theme/tokens';
 import { AirConditionerCard } from '../base/air-conditioner-card';
+import { BackendStatusLine } from '../base/backend-status-line';
 import { ScreenNames, type RootStackParamList } from '../navigation/screen-names';
 
 type Props = NativeStackScreenProps<RootStackParamList, typeof ScreenNames.DeviceList>;
@@ -21,6 +22,7 @@ type Props = NativeStackScreenProps<RootStackParamList, typeof ScreenNames.Devic
 export const DeviceListScreen = ({ navigation }: Props) => {
   const devices = useDevicesStore((state) => state.devices);
   const isLoading = useDevicesStore((state) => state.isLoading);
+  const isBackendReachable = useDevicesStore((state) => state.isBackendReachable);
   const errorMessage = useDevicesStore((state) => state.errorMessage);
   const loadDevices = useDevicesStore((state) => state.loadDevices);
 
@@ -39,6 +41,10 @@ export const DeviceListScreen = ({ navigation }: Props) => {
     [navigation],
   );
 
+  const handleOpenSchedules = useCallback(() => {
+    navigation.navigate(ScreenNames.ScheduleList);
+  }, [navigation]);
+
   const renderItem = useCallback(
     ({ item }: { item: AirConditionerView }) => (
       <AirConditionerCard device={item} onPress={() => handleOpenDevice(item.id)} />
@@ -46,15 +52,29 @@ export const DeviceListScreen = ({ navigation }: Props) => {
     [handleOpenDevice],
   );
 
+  const listFooter = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Programas"
+      onPress={handleOpenSchedules}
+      style={({ pressed }) => [styles.schedulesButton, pressed && styles.pressed]}
+    >
+      <Text style={styles.schedulesLabel}>Programas</Text>
+    </Pressable>
+  );
+
   return (
     <View style={styles.screen}>
-      <Text style={styles.title}>Mis aires</Text>
-      <Text style={styles.subtitle}>Estado deseado (última orden enviada)</Text>
+      <BackendStatusLine isBackendReachable={isBackendReachable} />
+      <Text style={styles.title}>🏠 Mis aires</Text>
 
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
 
       {isLoading && devices.length === 0 ? (
-        <ActivityIndicator color={colors.accent} style={styles.loader} />
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color={colors.accent} style={styles.loader} />
+          {listFooter}
+        </View>
       ) : (
         <FlatList
           data={devices}
@@ -62,6 +82,7 @@ export const DeviceListScreen = ({ navigation }: Props) => {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListFooterComponent={listFooter}
           refreshControl={
             <RefreshControl
               refreshing={isLoading}
@@ -74,15 +95,6 @@ export const DeviceListScreen = ({ navigation }: Props) => {
           }
         />
       )}
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Actualizar lista"
-        onPress={handleRefresh}
-        style={({ pressed }) => [styles.refreshButton, pressed && styles.pressed]}
-      >
-        <Text style={styles.refreshLabel}>Actualizar</Text>
-      </Pressable>
     </View>
   );
 };
@@ -98,11 +110,6 @@ const styles = createStyles({
   title: {
     ...typography.title,
     color: colors.text,
-  },
-  subtitle: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: spacing.xxs,
     marginBottom: spacing.m,
   },
   error: {
@@ -110,11 +117,15 @@ const styles = createStyles({
     color: colors.danger,
     marginBottom: spacing.s,
   },
+  loadingWrap: {
+    flex: 1,
+  },
   loader: {
     marginTop: spacing.xl,
   },
   list: {
     paddingBottom: spacing.m,
+    flexGrow: 1,
   },
   separator: {
     height: spacing.s,
@@ -125,16 +136,21 @@ const styles = createStyles({
     textAlign: 'center',
     marginTop: spacing.xl,
   },
-  refreshButton: {
-    alignSelf: 'center',
+  schedulesButton: {
+    marginTop: spacing.l,
+    alignSelf: 'stretch',
+    backgroundColor: colors.surface,
+    borderRadius: radius.m,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingVertical: spacing.s,
-    paddingHorizontal: spacing.l,
+    alignItems: 'center',
+  },
+  schedulesLabel: {
+    ...typography.bodyBold,
+    color: colors.accent,
   },
   pressed: {
     opacity: 0.7,
-  },
-  refreshLabel: {
-    ...typography.bodyBold,
-    color: colors.accent,
   },
 });

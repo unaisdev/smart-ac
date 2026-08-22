@@ -182,7 +182,7 @@ publish:   smartac/device/+/state
 2. `isAuthorizedTelegramUser()` por **user ID**.
 3. Selección de aire + power, mode, temp, fan, swing, turbo, eco.
 4. Copy de “estado deseado / última orden”, nunca “el aire está en X” sin `reportedState`.
-5. Webhook `POST /telegram/webhook` (producción) o long polling (local).
+5. Webhook `POST /telegram/webhook` (producción) o long polling (local). **Pendiente:** montar webhook + `setWebhook` en deploy; ver [`BACKEND.md` §8](BACKEND.md) (409, un solo consumidor, no separar contenedor sin bus).
 
 **Salida:**
 
@@ -207,6 +207,7 @@ Wizard `/schedule`: aire → hora (p. ej. 08:00) → antelación (p. ej. 1 h ant
 4. Componentes de la spec.
 5. Zustand o Context.
 6. Pull to refresh / botón actualizar.
+7. Programas: REST `/api/schedules` + pantallas lista/wizard (paridad Telegram).
 
 **Salida:**
 
@@ -214,6 +215,7 @@ Wizard `/schedule`: aire → hora (p. ej. 08:00) → antelación (p. ej. 1 h ant
 - [ ] Control de ambos aires verificado en dispositivo / simulador
 - [x] Misma semántica de estado que Telegram (`desiredState` / última orden)
 - [ ] Funciona contra mock y contra API real en red local
+- [x] REST de schedules + UI Programas / wizard en Expo
 
 **No hacer en el MVP:** Expo Router, WebSocket, login social.
 
@@ -224,7 +226,6 @@ Wizard `/schedule`: aire → hora (p. ej. 08:00) → antelación (p. ej. 1 h ant
 Solo cuando el MVP de la spec esté tildado.
 
 - WebSocket hacia la app
-- Timers en Expo (el backend ya ejecuta los de Telegram)
 - Escenas, favoritos, historial
 - Temperatura ambiente / sensores
 - Integración Home Assistant

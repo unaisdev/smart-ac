@@ -1,0 +1,14 @@
+---
+description: GitHub workflow — always branch with type/scope before coding
+alwaysApply: true
+---
+
+# GitHub workflow
+
+- Never implement a task on `main`. Create a branch first: `type/scope-short-description`.
+- Scopes: `mobile`, `backend`, `telegram`, `firmware`, `shared`, `api-client`, `docker`, `docs`, `monorepo`.
+- One PR = one concern. Do not mix firmware IR work with Expo UI.
+- Commits: `type(scope): subject` in English, imperative.
+- PR titles: `[TYPE][SCOPE] Short description in English`.
+- Follow `docs/GITHUB.md`. Use skills `start-task` and `submit-pr-for-review` when the user starts or finishes a task.
+- Never commit secrets (`.env`, tokens, WiFi, MQTT passwords, real Telegram IDs).

@@ -41,7 +41,7 @@ Proyecto **open source**: cualquiera puede montarlo en casa con un ESP32, un rec
 - No modifica el aire acondicionado.
 - No afirma que el aire “está encendido” solo porque se haya enviado IR.
 - No expone MQTT a Internet sin autenticación.
-- No implementa Home Assistant, escenas ni timers en el MVP.
+- No implementa Home Assistant ni escenas en el MVP. Los programas horarios sí (Telegram + Expo; el backend ejecuta).
 
 ## Documentación
 
