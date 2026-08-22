@@ -8,8 +8,12 @@ interface DevicesState {
   devices: AirConditionerView[];
   isLoading: boolean;
   isMutating: boolean;
+  isLiveSyncConnected: boolean;
   errorMessage: string | null;
   loadDevices: () => Promise<void>;
+  applyRemoteDevice: (device: AirConditionerView) => void;
+  startLiveSync: () => void;
+  stopLiveSync: () => void;
   setPower: (id: string, power: boolean) => Promise<void>;
   setTemperature: (id: string, temperature: number) => Promise<void>;
   setMode: (id: string, mode: AirMode) => Promise<void>;
@@ -20,22 +24,65 @@ interface DevicesState {
 }
 
 function upsertDevice(devices: AirConditionerView[], next: AirConditionerView): AirConditionerView[] {
-  const index = devices.findIndex((device) => device.id === next.id);
+  const view: AirConditionerView = {
+    id: next.id,
+    name: next.name,
+    location: next.location,
+    desiredState: next.desiredState,
+    reportedState: next.reportedState,
+    online: next.online,
+  };
+  const index = devices.findIndex((device) => device.id === view.id);
   if (index === -1) {
-    return [...devices, next];
+    return [...devices, view];
   }
   const copy = [...devices];
-  copy[index] = next;
+  copy[index] = view;
   return copy;
 }
+
+let stopSubscription: (() => void) | null = null;
 
 export const useDevicesStore = create<DevicesState>((set, get) => ({
   devices: [],
   isLoading: false,
   isMutating: false,
+  isLiveSyncConnected: false,
   errorMessage: null,
 
   getDevice: (id) => get().devices.find((device) => device.id === id),
+
+  applyRemoteDevice: (device) => {
+    set((state) => ({
+      devices: upsertDevice(state.devices, device),
+    }));
+  },
+
+  startLiveSync: () => {
+    if (stopSubscription) {
+      return;
+    }
+
+    stopSubscription = apiClient.subscribeAirConditionerChanges(
+      (device) => {
+        get().applyRemoteDevice(device);
+      },
+      {
+        onOpen: () => {
+          set({ isLiveSyncConnected: true });
+        },
+        onError: () => {
+          set({ isLiveSyncConnected: false });
+        },
+      },
+    );
+  },
+
+  stopLiveSync: () => {
+    stopSubscription?.();
+    stopSubscription = null;
+    set({ isLiveSyncConnected: false });
+  },
 
   loadDevices: async () => {
     set({ isLoading: true, errorMessage: null });

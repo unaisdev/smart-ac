@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
-    "test": "NODE_ENV=test tsx --test src/domain/air-conditioner-service.test.ts src/domain/schedule-time.test.ts src/domain/schedule-service.test.ts src/http/api.test.ts src/http/auth.test.ts src/telegram/auth.test.ts src/telegram/copy.test.ts src/telegram/schedule-draft.test.ts"
+    "test": "NODE_ENV=test tsx --test src/domain/air-conditioner-service.test.ts src/domain/schedule-time.test.ts src/domain/schedule-service.test.ts src/http/api.test.ts src/http/auth.test.ts src/http/events.test.ts src/telegram/auth.test.ts src/telegram/copy.test.ts src/telegram/schedule-draft.test.ts"
   },
   "dependencies": {
     "@smart-ac/shared": "workspace:*",
