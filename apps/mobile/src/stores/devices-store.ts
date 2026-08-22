@@ -1,8 +1,14 @@
 import { create } from 'zustand';
+import type { CommandResult } from '@smart-ac/api-client';
 import type { AirConditionerView, AirMode, AirState, FanSpeed } from '@smart-ac/shared';
 import { mergeAirState } from '@smart-ac/shared';
 
 import { apiClient } from '../config/api-client';
+import {
+  showCommandError,
+  showCommandSuccess,
+  type CommandChange,
+} from '../feedback/command-toast';
 
 interface DevicesState {
   devices: AirConditionerView[];
@@ -29,127 +35,110 @@ function upsertDevice(devices: AirConditionerView[], next: AirConditionerView): 
   return copy;
 }
 
-export const useDevicesStore = create<DevicesState>((set, get) => ({
-  devices: [],
-  isLoading: false,
-  isMutating: false,
-  errorMessage: null,
+function toErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
 
-  getDevice: (id) => get().devices.find((device) => device.id === id),
-
-  loadDevices: async () => {
-    set({ isLoading: true, errorMessage: null });
-    try {
-      const devices = await apiClient.listAirConditioners();
-      set({ devices, isLoading: false });
-    } catch (error) {
-      set({
-        isLoading: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cargar la lista',
-      });
-    }
-  },
-
-  setPower: async (id, power) => {
+export const useDevicesStore = create<DevicesState>((set, get) => {
+  const runCommand = async (
+    execute: () => Promise<CommandResult>,
+    change: CommandChange,
+    fallbackError: string,
+  ): Promise<void> => {
     set({ isMutating: true, errorMessage: null });
     try {
-      const result = await apiClient.setPower(id, power);
+      const result = await execute();
       set((state) => ({
         devices: upsertDevice(state.devices, result),
         isMutating: false,
+        errorMessage: result.commandSent ? null : 'No se pudo enviar la orden al controlador',
       }));
+      showCommandSuccess(result, change);
     } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el power',
-      });
+      const errorMessage = toErrorMessage(error, fallbackError);
+      set({ isMutating: false, errorMessage });
+      showCommandError(errorMessage);
     }
-  },
+  };
 
-  setTemperature: async (id, temperature) => {
-    set({ isMutating: true, errorMessage: null });
-    try {
-      const result = await apiClient.setTemperature(id, temperature);
-      set((state) => ({
-        devices: upsertDevice(state.devices, result),
-        isMutating: false,
-      }));
-    } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar la temperatura',
-      });
-    }
-  },
+  return {
+    devices: [],
+    isLoading: false,
+    isMutating: false,
+    errorMessage: null,
 
-  setMode: async (id, mode) => {
-    set({ isMutating: true, errorMessage: null });
-    try {
-      const result = await apiClient.setMode(id, mode);
-      set((state) => ({
-        devices: upsertDevice(state.devices, result),
-        isMutating: false,
-      }));
-    } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el modo',
-      });
-    }
-  },
+    getDevice: (id) => get().devices.find((device) => device.id === id),
 
-  setFan: async (id, fan) => {
-    set({ isMutating: true, errorMessage: null });
-    try {
-      const result = await apiClient.setFan(id, fan);
-      set((state) => ({
-        devices: upsertDevice(state.devices, result),
-        isMutating: false,
-      }));
-    } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el ventilador',
-      });
-    }
-  },
+    loadDevices: async () => {
+      set({ isLoading: true, errorMessage: null });
+      try {
+        const devices = await apiClient.listAirConditioners();
+        set({ devices, isLoading: false });
+      } catch (error) {
+        const errorMessage = toErrorMessage(error, 'No se pudo cargar la lista');
+        set({
+          isLoading: false,
+          errorMessage,
+        });
+        showCommandError(errorMessage);
+      }
+    },
 
-  setSwing: async (id, swing) => {
-    set({ isMutating: true, errorMessage: null });
-    try {
-      const result = await apiClient.setSwing(id, swing);
-      set((state) => ({
-        devices: upsertDevice(state.devices, result),
-        isMutating: false,
-      }));
-    } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el swing',
-      });
-    }
-  },
+    setPower: async (id, power) => {
+      await runCommand(
+        () => apiClient.setPower(id, power),
+        { kind: 'power', power },
+        'No se pudo cambiar el power',
+      );
+    },
 
-  patchDesired: async (id, patch) => {
-    const current = get().getDevice(id);
-    if (!current) {
-      set({ errorMessage: `Dispositivo no encontrado: ${id}` });
-      return;
-    }
+    setTemperature: async (id, temperature) => {
+      await runCommand(
+        () => apiClient.setTemperature(id, temperature),
+        { kind: 'temperature', temperature },
+        'No se pudo cambiar la temperatura',
+      );
+    },
 
-    set({ isMutating: true, errorMessage: null });
-    try {
+    setMode: async (id, mode) => {
+      await runCommand(
+        () => apiClient.setMode(id, mode),
+        { kind: 'mode', mode },
+        'No se pudo cambiar el modo',
+      );
+    },
+
+    setFan: async (id, fan) => {
+      await runCommand(
+        () => apiClient.setFan(id, fan),
+        { kind: 'fan', fan },
+        'No se pudo cambiar el ventilador',
+      );
+    },
+
+    setSwing: async (id, swing) => {
+      await runCommand(
+        () => apiClient.setSwing(id, swing),
+        { kind: 'swing', swing },
+        'No se pudo cambiar el swing',
+      );
+    },
+
+    patchDesired: async (id, patch) => {
+      const current = get().getDevice(id);
+      if (!current) {
+        const errorMessage = `Dispositivo no encontrado: ${id}`;
+        set({ errorMessage });
+        showCommandError(errorMessage);
+        return;
+      }
+
       const nextState = mergeAirState(current.desiredState, patch);
-      const result = await apiClient.setState(id, nextState);
-      set((state) => ({
-        devices: upsertDevice(state.devices, result),
-        isMutating: false,
-      }));
-    } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo actualizar el estado',
-      });
-    }
-  },
-}));
+      await runCommand(
+        () => apiClient.setState(id, nextState),
+        { kind: 'patch', patch },
+        'No se pudo actualizar el estado',
+      );
+    },
+  };
+});
