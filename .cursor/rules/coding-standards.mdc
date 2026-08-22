@@ -1,0 +1,57 @@
+---
+description: TypeScript and general coding standards for Smart AC
+globs: "**/*.{ts,tsx,js,jsx}"
+alwaysApply: false
+---
+
+# Coding standards
+
+## TypeScript
+
+- All new app/package code is TypeScript with strict typing.
+- Never use `any` or unjustified `@ts-ignore` / `@ts-expect-error`.
+- Prefer `interface` for object shapes (props, view models); `type` for unions/aliases.
+- Use type guards for runtime narrowing (`isAirState`, etc.).
+- **Do not use `React.FC` / `React.FunctionComponent`** — type props on parameters:
+
+```typescript
+export const DeviceCard = ({ name }: Props) => { ... };
+```
+
+- Need `children`? Extend `PropsWithChildren` instead of adding `children` manually.
+
+## Exports & files
+
+- **Named exports only** — no `export default` (exception: Expo entry `App.tsx` / `expo-router` root if required by the framework).
+- Files: **kebab-case** (`device-card.tsx`, `use-devices.ts`).
+- Components: **PascalCase**. Variables/functions: **camelCase**.
+- Booleans: `isLoading`, `hasError`, `isPoweredOn`.
+- No unnecessary barrel `index.ts`; import from the defining module.
+
+## Conditionals
+
+- Prefer action maps / dictionaries over long `if` / `switch` chains.
+- Always use curly braces in `if` / `else`.
+
+## Imports (order)
+
+1. External (React, React Native, Expo)
+2. Third-party
+3. Workspace packages (`@smart-ac/*`)
+4. Absolute / aliased app imports
+5. Relative imports
+6. Types
+7. Styles
+
+## Architecture
+
+- Reuse `@smart-ac/shared` types — do not duplicate `AirState` / modes.
+- HTTP only via `@smart-ac/api-client` — no `fetch` in UI or Telegram handlers.
+- Telegram and Expo never talk to MQTT/IR directly.
+- Never present IR-sent `desiredState` as confirmed device state without `reportedState`.
+
+## Quality
+
+- No commented-out code; no stray `console.log` in commits.
+- No secrets in source, tests, or docs examples with real tokens.
+- JSDoc only where intent is non-obvious; keep comments current.

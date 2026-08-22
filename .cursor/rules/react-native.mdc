@@ -1,0 +1,68 @@
+---
+description: React Native / Expo structure, components, styling, and state for Smart AC
+globs: "apps/mobile/**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# React Native (Expo) — Smart AC
+
+Full detail: `.cursor/skills/code-standards-react/SKILL.md`.
+
+## Layout (`apps/mobile/src`)
+
+```text
+components/
+  base/          # reusable UI (buttons, cards)
+  screens/       # full screens
+  navigation/    # React Navigation (no Expo Router in MVP)
+hooks/
+stores/          # Zustand
+theme/           # tokens + StyleSheet helpers
+config/          # env (API URL, secret) — never commit secrets
+```
+
+## Components
+
+- Functional only; props typed on parameters — **no `React.FC`**.
+- Named exports; kebab-case files; PascalCase names.
+- Split when useful: `foo.tsx`, `foo.styles.ts`, `foo.types.ts`.
+- Props callbacks: `onPress`, `onChangeTemperature`. Parent: `handlePress`.
+- Optional callbacks: `onPress?.()`.
+- Keep components small; extract hooks for reusable logic.
+- Prefer descriptive `const` over nested ternaries in JSX.
+
+## Styling
+
+- Styles live in `*.styles.ts` — no large inline style objects.
+- Use theme tokens from `src/theme` (colors, spacing, radius, typography).
+- Avoid magic numbers; name constants when needed.
+- Lists: `FlatList` with stable `keyExtractor` — no index keys for dynamic data.
+
+## State
+
+- **Zustand** for shared device/API state (`stores/`).
+- Local `useState` for ephemeral UI only.
+- Separate UI flags (`isSubmitting`) from domain (`devices`).
+- Named export for stores: `export const useDevicesStore = create(...)`.
+
+## Navigation
+
+- React Navigation stack — **not** Expo Router (MVP).
+- Screen names via a typed const/enum — no raw string literals for routes.
+- Type params with `NativeStackScreenProps` / `RouteProp`.
+
+## Data
+
+- No `fetch` in components — only `@smart-ac/api-client`.
+- Types from `@smart-ac/shared`.
+- Copy: “última orden / estado deseado”, never “el aire está en X” without `reportedState`.
+
+## Testing
+
+- Co-locate `*.test.ts(x)`; names without “should”.
+- `renderElement` + `query` object pattern.
+- Prefer RTL `screen` / user-event patterns; no `.only` in commits.
+
+## Entry exception
+
+`App.tsx` may use `export default` if Expo requires it; everything under `src/` uses named exports.

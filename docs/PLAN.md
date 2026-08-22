@@ -210,9 +210,10 @@ Wizard `/schedule`: aire → hora (p. ej. 08:00) → antelación (p. ej. 1 h ant
 
 **Salida:**
 
-- [ ] Control de ambos aires
-- [ ] Misma semántica de estado que Telegram
-- [ ] Funciona contra mock y contra API real
+- [x] Scaffold Expo + navegación + store (mock API)
+- [ ] Control de ambos aires verificado en dispositivo / simulador
+- [x] Misma semántica de estado que Telegram (`desiredState` / última orden)
+- [ ] Funciona contra mock y contra API real en red local
 
 **No hacer en el MVP:** Expo Router, WebSocket, login social.
 

@@ -1,0 +1,30 @@
+---
+description: apps/mobile folder structure and feature boundaries
+globs: "apps/mobile/**"
+alwaysApply: false
+---
+
+# Mobile project structure
+
+App lives in `apps/mobile` (Expo + TypeScript). Shared contracts in `packages/shared`; HTTP in `packages/api-client`.
+
+## Do
+
+- Put screens under `src/components/screens/`
+- Put reusable controls under `src/components/base/`
+- Put navigation under `src/components/navigation/`
+- Put Zustand stores under `src/stores/`
+- Put theme under `src/theme/`
+
+## Do not
+
+- Import MQTT or IR libraries in the app
+- Call `fetch` from components or screens
+- Add Expo Router in the MVP
+- Duplicate `AirState` / mode unions — import from `@smart-ac/shared`
+- Commit `.env` with real `API_SECRET` or LAN URLs with credentials
+
+## Config
+
+- `EXPO_PUBLIC_API_BASE_URL` — e.g. `http://127.0.0.1:3000` or LAN IP of the machine running the backend
+- `EXPO_PUBLIC_API_SECRET` — same value as backend `API_SECRET` (dev only; rotate for production)
