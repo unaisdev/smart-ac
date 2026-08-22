@@ -102,3 +102,51 @@ python3 tools/regenerate_signals.py
 
 Entorno **`esp32dev`** + upload (firmware de recepción).
 
+---
+
+## Fases 4–5 — WiFi + MQTT (power IR)
+
+Entorno **`esp32dev-mqtt`**: WiFi, broker MQTT y emisión IR de **encender/apagar** al recibir `setState`.
+
+### Credenciales locales
+
+```bash
+cp include/secrets.h.example include/secrets.h
+# Edita include/secrets.h (no se sube a Git)
+```
+
+Debe coincidir con tu Mosquitto local (ver `.env.example` en la raíz del monorepo).
+
+### Subir firmware MQTT
+
+```bash
+pio run -e esp32dev-mqtt -t upload
+pio device monitor -b 115200
+```
+
+Monitor: `=== BOOT OK (mqtt) ===`, IP WiFi, `MQTT: connected`.
+
+### Topics (controller `ac-controller`)
+
+| Topic | Dirección |
+| --- | --- |
+| `smartac/device/ac-controller/command` | ESP32 subscribe |
+| `smartac/device/ac-controller/state` | ESP32 publish respuesta |
+| `smartac/device/ac-controller/status` | ESP32 publish `{"online":true}` (LWT offline) |
+
+### Probar con Mosquitto
+
+Con el broker en marcha (`docker compose` o Mosquitto local):
+
+```bash
+mosquitto_pub -h 127.0.0.1 -p 1883 -u smartac -P smartac \
+  -t smartac/device/ac-controller/command \
+  -m '{"deviceId":"ac-salon","command":"setState","requestId":"test-1","state":{"power":true,"mode":"cool","temperature":24,"fan":"auto","swing":false,"turbo":false,"eco":false,"clean":false,"led":true}}'
+```
+
+Apagar: mismo mensaje con `"power":false`.
+
+**Limitación:** este build solo emite IR de **power**. Temp/modo/fan en el JSON se aceptan pero no disparan IR hasta [`docs/IR-JOHNSON.md`](../../docs/IR-JOHNSON.md).
+
+Payloads: [`docs/SPECS.md`](../../docs/SPECS.md) §8.
+

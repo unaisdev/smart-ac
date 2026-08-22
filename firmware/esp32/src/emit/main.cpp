@@ -1,9 +1,6 @@
 #include <Arduino.h>
-#include <IRsend.h>
 
-#include "captured_signals.h"
-
-IRsend irsend(kIrLedPin);
+#include "ir_emit.h"
 
 void printMenu() {
   Serial.println();
@@ -20,31 +17,6 @@ void printMenu() {
   Serial.println();
 }
 
-void emitSignal(const MappedSignal& signal, const uint8_t repeats) {
-  Serial.print(F("Emitiendo (RAW x"));
-  Serial.print(repeats);
-  Serial.print(F("): "));
-  Serial.println(signal.label);
-
-  for (uint8_t attempt = 0; attempt < repeats; attempt++) {
-    irsend.sendRaw(signal.raw, signal.rawLen, kIrFrequency);
-    delay(200);
-  }
-
-  Serial.println(F("OK"));
-}
-
-void emitByIndex(const size_t index) {
-  if (index >= kMappedSignalCount) {
-    Serial.println(F("Tecla no mapeada"));
-    return;
-  }
-
-  // Power: 3 envios. Temp: 1 envio (como un solo clic del mando).
-  const uint8_t repeats = (index >= 2) ? 1 : 3;
-  emitSignal(kMappedSignals[index], repeats);
-}
-
 void setup() {
   Serial.begin(115200);
   delay(2000);
@@ -53,7 +25,7 @@ void setup() {
     Serial.read();
   }
 
-  irsend.begin();
+  irEmitBegin();
 
   Serial.println();
   Serial.println(F("=== BOOT OK (emit) ==="));
@@ -69,16 +41,16 @@ void loop() {
 
   switch (key) {
     case '1':
-      emitByIndex(0);
+      irEmitByIndex(0);
       break;
     case '2':
-      emitByIndex(1);
+      irEmitByIndex(1);
       break;
     case '3':
-      emitByIndex(2);
+      irEmitByIndex(2);
       break;
     case '4':
-      emitByIndex(3);
+      irEmitByIndex(3);
       break;
     case 'm':
     case 'M':
