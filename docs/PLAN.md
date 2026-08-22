@@ -2,7 +2,7 @@
 
 Documento de **cómo** y **en qué orden**. El qué está en [`SPECS.md`](SPECS.md). Los componentes en [`MATERIALS.md`](MATERIALS.md).
 
-Regla: **no construir todo de golpe**. Cada fase debe ser usable sola antes de pasar a la siguiente. Si el protocolo Midea de una librería existente funciona, reutilizarlo. Si no, captura RAW. No inventar el protocolo.
+Regla: **no construir todo de golpe**. Cada fase debe ser usable sola antes de pasar a la siguiente. Si un decoder existente (COOLIX, BOSCH144, etc.) funciona con el mando Johnson, reutilizarlo. Si no, captura RAW. No inventar el protocolo.
 
 Mientras el hardware no esté listo, las fases 5–7 pueden avanzar en paralelo usando `MockAirConditionerTransport`.
 
@@ -42,7 +42,7 @@ Mientras el hardware no esté listo, las fases 5–7 pueden avanzar en paralelo 
 Mando original → IR → VS1838B → ESP32
 ```
 
-**Objetivo:** el ESP32 imprime (serial) que ha recibido una señal IR al pulsar el mando Midea.
+**Objetivo:** el ESP32 imprime (serial) que ha recibido una señal IR al pulsar el mando Johnson.
 
 **Tareas:**
 
@@ -63,19 +63,20 @@ Mando original → IR → VS1838B → ESP32
 
 ## Fase 2 — Identificar el protocolo
 
-**Objetivo:** saber si las tramas son Midea conocido o hay que reproducir RAW.
+**Objetivo:** saber si las tramas encajan con un decoder conocido (COOLIX, BOSCH144, etc.) o hay que reproducir RAW.
 
 **Tareas:**
 
-1. Probar decoders existentes (IRremoteESP8266 Midea / ESPHome Midea IR).
-2. Comparar con familia RG10.
+1. Probar decoders existentes en IRremoteESP8266 (COOLIX, BOSCH144, etc.).
+2. Comparar capturas con el mando Johnson original.
 3. Decidir: encoder de librería **o** almacén RAW + replay.
 4. Confirmar si cada pulsación envía **estado completo** (hipótesis de la spec).
 
 **Salida:**
 
-- [ ] Decisión documentada en `docs/` (una página corta: “usamos librería X” o “replay RAW”)
-- [ ] Si hay estado completo: mapa campo ↔ bits / o evidencia de que no
+- [x] Decisión documentada en [`IR-JOHNSON.md`](IR-JOHNSON.md) (replay RAW en POC; encoder con estado pendiente)
+- [x] Evidencia de estado completo (códigos COOLIX cambian con temperatura; temp− alterna BOSCH144/COOLIX)
+- [ ] Mapa campo ↔ bits (pendiente con generación COOLIX en ESP32)
 
 **No hacer:** implementar un protocolo de memoria.
 
@@ -98,11 +99,22 @@ ESP32 → LED IR (+ transistor) → Aire
 
 **Salida:**
 
-- [ ] AC #1 responde
+- [x] AC #1 responde (ON/OFF verificados; temp± una pulsación desde estado capturado)
 - [ ] AC #2 responde (mismo emisor o segundo LED)
 - [ ] Lista de órdenes verificadas (power, mode, temp, fan, swing, …)
+- [ ] Temp± repetidas sin recapturar — ver **pendiente** en [`IR-JOHNSON.md`](IR-JOHNSON.md)
 
 **No hacer:** app ni bot. Un botón en serial / GPIO basta.
+
+### Estado actual (POC emisor, 2026-08-23)
+
+Rama de trabajo: `feature/firmware-ir-emitter-poc`. Firmware en `firmware/esp32/` (`esp32dev` captura, `esp32dev-emit` emisor).
+
+- Replay RAW de 4 botones (power on/off, temp up/down) desde `captures/`.
+- El mando Johnson manda **estado completo**; una captura por botón no basta para muchas pulsaciones seguidas de temp±.
+- **Pendiente en ESP32 (post WiFi/MQTT):** generación de tramas COOLIX/BOSCH144 con estado interno — detalle en [`IR-JOHNSON.md`](IR-JOHNSON.md).
+
+**Siguiente carril:** Fase 4 (WiFi) + Fase 5 (MQTT); el ESP32 puede seguir con replay RAW para ON/OFF hasta tener el encoder de estado.
 
 ---
 
@@ -229,7 +241,7 @@ Solo cuando el MVP de la spec esté tildado.
 - Escenas, favoritos, historial
 - Temperatura ambiente / sensores
 - Integración Home Assistant
-- `MideaLocalTransport` si el modelo concreto lo permite
+- `JohnsonLocalTransport` si el modelo concreto lo permite
 
 ---
 
@@ -241,7 +253,7 @@ Solo cuando el MVP de la spec esté tildado.
 | Mock + API + tipos shared | En cuanto exista el repo (hoy: no código; cuando se abra la fase 6) |
 | Telegram contra mock | Tras el esqueleto de la fase 6 |
 | Expo contra mock | Tras el esqueleto de la fase 6 |
-| MQTT real | Tras fases 3–4 |
+| MQTT real | Tras fase 3 POC emisor + fase 4 WiFi (replay RAW basta para ON/OFF; temp± completo tras [`IR-JOHNSON.md`](IR-JOHNSON.md)) |
 
 El carril mock **no** desbloquea dar por cerrado el MVP: el MVP exige el aire respondiendo.
 
