@@ -6,6 +6,11 @@ import type {
   CreateScheduleInput,
   FanSpeed,
 } from '@smart-ac/shared';
+import {
+  createAirConditionerChangeSubscription,
+  type AirConditionerChangeHandler,
+  type SubscribeAirConditionerChangesOptions,
+} from './subscribe-air-conditioner-changes';
 
 export interface SmartAcApiClientOptions {
   baseUrl: string;
@@ -104,8 +109,25 @@ export class SmartAcApiClient {
     return this.request<void>('DELETE', `/api/schedules/${encodeURIComponent(id)}`);
   }
 
+  /**
+   * Subscribe to live air-conditioner updates (SSE).
+   */
+  subscribeAirConditionerChanges(
+    onChange: AirConditionerChangeHandler,
+    options?: SubscribeAirConditionerChangesOptions,
+  ): () => void {
+    return createAirConditionerChangeSubscription({
+      baseUrl: this.baseUrl,
+      apiSecret: this.apiSecret,
+      fetchImpl: this.fetchImpl,
+      onChange,
+      onError: options?.onError,
+      onOpen: options?.onOpen,
+      reconnectDelayMs: options?.reconnectDelayMs,
+    });
+  }
 
-    private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
       method,
       headers: {

@@ -30,8 +30,14 @@ HTTP solo por `@smart-ac/api-client`.
 ```text
 src/
   components/base|screens|navigation
+  feedback/        # toasts de resultado de orden (success / warning / error)
   stores/          # Zustand
   theme/           # tokens + createStyles
   config/          # API URL + client
   utils/
 ```
+
+Feedback de órdenes: toasts apilados desde abajo (`ToastHost`).
+Tras cada mutación se muestra qué cambió y si el aire queda ON/OFF;
+éxito si `commandSent`, warning si el controlador no envió IR / está offline,
+o error si la API falla.

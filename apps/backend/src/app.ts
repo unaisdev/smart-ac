@@ -5,6 +5,7 @@ import { ScheduleService } from './domain/schedule-service.ts';
 import { openDatabase, type SqliteDatabase } from './db/client.ts';
 import { registerAirConditionerRoutes } from './http/air-conditioners.ts';
 import { registerApiAuth } from './http/auth.ts';
+import { registerEventRoutes } from './http/events.ts';
 import { HttpError } from './http/errors.ts';
 import { registerHealthRoutes } from './http/health.ts';
 import { registerScheduleRoutes } from './http/schedules.ts';
@@ -48,6 +49,7 @@ export async function buildApp(
   await registerHealthRoutes(app, db, config.transport);
   await registerAirConditionerRoutes(app, service);
   await registerScheduleRoutes(app, schedules);
+  await registerEventRoutes(app, service);
 
   return { app, db, transport, service, schedules };
 }
