@@ -1,4 +1,9 @@
 import type { AirConditionerView, AirMode, AirState, FanSpeed } from '@smart-ac/shared';
+import {
+  createAirConditionerChangeSubscription,
+  type AirConditionerChangeHandler,
+  type SubscribeAirConditionerChangesOptions,
+} from './subscribe-air-conditioner-changes';
 
 export interface SmartAcApiClientOptions {
   baseUrl: string;
@@ -74,6 +79,24 @@ export class SmartAcApiClient {
   setSwing(id: string, swing: boolean): Promise<CommandResult> {
     return this.request<CommandResult>('POST', `/api/air-conditioners/${encodeURIComponent(id)}/swing`, {
       swing,
+    });
+  }
+
+  /**
+   * Subscribe to live air-conditioner updates (SSE).
+   */
+  subscribeAirConditionerChanges(
+    onChange: AirConditionerChangeHandler,
+    options?: SubscribeAirConditionerChangesOptions,
+  ): () => void {
+    return createAirConditionerChangeSubscription({
+      baseUrl: this.baseUrl,
+      apiSecret: this.apiSecret,
+      fetchImpl: this.fetchImpl,
+      onChange,
+      onError: options?.onError,
+      onOpen: options?.onOpen,
+      reconnectDelayMs: options?.reconnectDelayMs,
     });
   }
 

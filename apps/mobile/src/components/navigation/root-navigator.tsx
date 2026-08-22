@@ -1,6 +1,7 @@
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { useLiveDeviceSync } from '../../hooks/use-live-device-sync';
 import { colors } from '../../theme/tokens';
 import { DeviceListScreen } from '../screens/device-list-screen';
 import { RemoteScreen } from '../screens/remote-screen';
@@ -21,6 +22,8 @@ const navigationTheme = {
 };
 
 export const RootNavigator = () => {
+  useLiveDeviceSync();
+
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
