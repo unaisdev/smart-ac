@@ -4,6 +4,7 @@ import { AirConditionerService } from './domain/air-conditioner-service.ts';
 import { openDatabase, type SqliteDatabase } from './db/client.ts';
 import { registerAirConditionerRoutes } from './http/air-conditioners.ts';
 import { registerApiAuth } from './http/auth.ts';
+import { registerEventRoutes } from './http/events.ts';
 import { HttpError } from './http/errors.ts';
 import { registerHealthRoutes } from './http/health.ts';
 import type { AirConditionerTransport } from './transport/air-conditioner-transport.ts';
@@ -43,6 +44,7 @@ export async function buildApp(
   await registerApiAuth(app, config.apiSecret);
   await registerHealthRoutes(app, db, config.transport);
   await registerAirConditionerRoutes(app, service);
+  await registerEventRoutes(app, service);
 
   return { app, db, transport, service };
 }

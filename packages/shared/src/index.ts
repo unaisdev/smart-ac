@@ -13,8 +13,18 @@ export {
 } from './air-state.ts';
 export type { AirMode, AirState, FanSpeed } from './air-state.ts';
 
-export { MQTT_CONTROLLER_ID, SEED_AIR_CONDITIONERS } from './air-conditioner.ts';
-export type { AirConditioner, AirConditionerView } from './air-conditioner.ts';
+export {
+  AIR_CONDITIONER_CHANGED_EVENT,
+  MQTT_CONTROLLER_ID,
+  SEED_AIR_CONDITIONERS,
+  isAirConditionerChangedEvent,
+  isAirConditionerView,
+} from './air-conditioner.ts';
+export type {
+  AirConditioner,
+  AirConditionerChangedEvent,
+  AirConditionerView,
+} from './air-conditioner.ts';
 
 export {
   mqttCommandTopic,
