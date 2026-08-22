@@ -10,6 +10,6 @@
     "start": "pnpm --filter @smart-ac/backend start",
     "test": "pnpm --filter @smart-ac/backend test",
     "mobile": "pnpm --filter @smart-ac/mobile start",
-    "compose:up": "docker compose -f docker/docker-compose.yml up --build"
+    "compose:up": "docker-compose -f docker/docker-compose.yml up --build"
   }
 }
