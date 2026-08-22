@@ -130,8 +130,8 @@ Rama de trabajo: `feature/firmware-ir-emitter-poc`. Firmware en `firmware/esp32/
 
 **Salida:**
 
-- [ ] Conexión estable
-- [ ] Reconexión tras apagar el router unos segundos
+- [x] Conexión estable (`esp32dev-mqtt`, `include/secrets.h`)
+- [x] Reconexión tras caída WiFi (loop no bloqueante)
 
 ---
 
@@ -155,8 +155,9 @@ publish:   smartac/device/+/state
 
 **Salida:**
 
-- [ ] Un `mosquitto_pub` enciende o cambia un aire
-- [ ] El dispositivo publica estado / online
+- [x] Un `mosquitto_pub` enciende o apaga el aire (power IR; entorno `esp32dev-mqtt`)
+- [x] El dispositivo publica `state` y `status` / online
+- [ ] Temp/modo/fan por MQTT (pendiente encoder COOLIX — [`IR-JOHNSON.md`](IR-JOHNSON.md))
 
 ---
 
