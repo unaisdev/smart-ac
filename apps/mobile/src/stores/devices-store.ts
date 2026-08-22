@@ -1,8 +1,14 @@
 import { create } from 'zustand';
+import type { CommandResult } from '@smart-ac/api-client';
 import type { AirConditionerView, AirMode, AirState, FanSpeed } from '@smart-ac/shared';
 import { mergeAirState } from '@smart-ac/shared';
 
 import { apiClient } from '../config/api-client';
+import {
+  showCommandError,
+  showCommandSuccess,
+  type CommandChange,
+} from '../feedback/command-toast';
 
 interface DevicesState {
   devices: AirConditionerView[];
@@ -41,162 +47,145 @@ function upsertDevice(devices: AirConditionerView[], next: AirConditionerView): 
   return copy;
 }
 
+function toErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 let stopSubscription: (() => void) | null = null;
 
-export const useDevicesStore = create<DevicesState>((set, get) => ({
-  devices: [],
-  isLoading: false,
-  isMutating: false,
-  isLiveSyncConnected: false,
-  errorMessage: null,
-
-  getDevice: (id) => get().devices.find((device) => device.id === id),
-
-  applyRemoteDevice: (device) => {
-    set((state) => ({
-      devices: upsertDevice(state.devices, device),
-    }));
-  },
-
-  startLiveSync: () => {
-    if (stopSubscription) {
-      return;
+export const useDevicesStore = create<DevicesState>((set, get) => {
+  const runCommand = async (
+    execute: () => Promise<CommandResult>,
+    change: CommandChange,
+    fallbackError: string,
+  ): Promise<void> => {
+    set({ isMutating: true, errorMessage: null });
+    try {
+      const result = await execute();
+      set((state) => ({
+        devices: upsertDevice(state.devices, result),
+        isMutating: false,
+        errorMessage: result.commandSent ? null : 'No se pudo enviar la orden al controlador',
+      }));
+      showCommandSuccess(result, change);
+    } catch (error) {
+      const errorMessage = toErrorMessage(error, fallbackError);
+      set({ isMutating: false, errorMessage });
+      showCommandError(errorMessage);
     }
+  };
 
-    stopSubscription = apiClient.subscribeAirConditionerChanges(
-      (device) => {
-        get().applyRemoteDevice(device);
-      },
-      {
-        onOpen: () => {
-          set({ isLiveSyncConnected: true });
+  return {
+    devices: [],
+    isLoading: false,
+    isMutating: false,
+    isLiveSyncConnected: false,
+    errorMessage: null,
+
+    getDevice: (id) => get().devices.find((device) => device.id === id),
+
+    applyRemoteDevice: (device) => {
+      set((state) => ({
+        devices: upsertDevice(state.devices, device),
+      }));
+    },
+
+    startLiveSync: () => {
+      if (stopSubscription) {
+        return;
+      }
+
+      stopSubscription = apiClient.subscribeAirConditionerChanges(
+        (device) => {
+          get().applyRemoteDevice(device);
         },
-        onError: () => {
-          set({ isLiveSyncConnected: false });
+        {
+          onOpen: () => {
+            set({ isLiveSyncConnected: true });
+          },
+          onError: () => {
+            set({ isLiveSyncConnected: false });
+          },
         },
-      },
-    );
-  },
+      );
+    },
 
-  stopLiveSync: () => {
-    stopSubscription?.();
-    stopSubscription = null;
-    set({ isLiveSyncConnected: false });
-  },
+    stopLiveSync: () => {
+      stopSubscription?.();
+      stopSubscription = null;
+      set({ isLiveSyncConnected: false });
+    },
 
-  loadDevices: async () => {
-    set({ isLoading: true, errorMessage: null });
-    try {
-      const devices = await apiClient.listAirConditioners();
-      set({ devices, isLoading: false });
-    } catch (error) {
-      set({
-        isLoading: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cargar la lista',
-      });
-    }
-  },
+    loadDevices: async () => {
+      set({ isLoading: true, errorMessage: null });
+      try {
+        const devices = await apiClient.listAirConditioners();
+        set({ devices, isLoading: false });
+      } catch (error) {
+        const errorMessage = toErrorMessage(error, 'No se pudo cargar la lista');
+        set({
+          isLoading: false,
+          errorMessage,
+        });
+        showCommandError(errorMessage);
+      }
+    },
 
-  setPower: async (id, power) => {
-    set({ isMutating: true, errorMessage: null });
-    try {
-      const result = await apiClient.setPower(id, power);
-      set((state) => ({
-        devices: upsertDevice(state.devices, result),
-        isMutating: false,
-      }));
-    } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el power',
-      });
-    }
-  },
+    setPower: async (id, power) => {
+      await runCommand(
+        () => apiClient.setPower(id, power),
+        { kind: 'power', power },
+        'No se pudo cambiar el power',
+      );
+    },
 
-  setTemperature: async (id, temperature) => {
-    set({ isMutating: true, errorMessage: null });
-    try {
-      const result = await apiClient.setTemperature(id, temperature);
-      set((state) => ({
-        devices: upsertDevice(state.devices, result),
-        isMutating: false,
-      }));
-    } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar la temperatura',
-      });
-    }
-  },
+    setTemperature: async (id, temperature) => {
+      await runCommand(
+        () => apiClient.setTemperature(id, temperature),
+        { kind: 'temperature', temperature },
+        'No se pudo cambiar la temperatura',
+      );
+    },
 
-  setMode: async (id, mode) => {
-    set({ isMutating: true, errorMessage: null });
-    try {
-      const result = await apiClient.setMode(id, mode);
-      set((state) => ({
-        devices: upsertDevice(state.devices, result),
-        isMutating: false,
-      }));
-    } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el modo',
-      });
-    }
-  },
+    setMode: async (id, mode) => {
+      await runCommand(
+        () => apiClient.setMode(id, mode),
+        { kind: 'mode', mode },
+        'No se pudo cambiar el modo',
+      );
+    },
 
-  setFan: async (id, fan) => {
-    set({ isMutating: true, errorMessage: null });
-    try {
-      const result = await apiClient.setFan(id, fan);
-      set((state) => ({
-        devices: upsertDevice(state.devices, result),
-        isMutating: false,
-      }));
-    } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el ventilador',
-      });
-    }
-  },
+    setFan: async (id, fan) => {
+      await runCommand(
+        () => apiClient.setFan(id, fan),
+        { kind: 'fan', fan },
+        'No se pudo cambiar el ventilador',
+      );
+    },
 
-  setSwing: async (id, swing) => {
-    set({ isMutating: true, errorMessage: null });
-    try {
-      const result = await apiClient.setSwing(id, swing);
-      set((state) => ({
-        devices: upsertDevice(state.devices, result),
-        isMutating: false,
-      }));
-    } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo cambiar el swing',
-      });
-    }
-  },
+    setSwing: async (id, swing) => {
+      await runCommand(
+        () => apiClient.setSwing(id, swing),
+        { kind: 'swing', swing },
+        'No se pudo cambiar el swing',
+      );
+    },
 
-  patchDesired: async (id, patch) => {
-    const current = get().getDevice(id);
-    if (!current) {
-      set({ errorMessage: `Dispositivo no encontrado: ${id}` });
-      return;
-    }
+    patchDesired: async (id, patch) => {
+      const current = get().getDevice(id);
+      if (!current) {
+        const errorMessage = `Dispositivo no encontrado: ${id}`;
+        set({ errorMessage });
+        showCommandError(errorMessage);
+        return;
+      }
 
-    set({ isMutating: true, errorMessage: null });
-    try {
       const nextState = mergeAirState(current.desiredState, patch);
-      const result = await apiClient.setState(id, nextState);
-      set((state) => ({
-        devices: upsertDevice(state.devices, result),
-        isMutating: false,
-      }));
-    } catch (error) {
-      set({
-        isMutating: false,
-        errorMessage: error instanceof Error ? error.message : 'No se pudo actualizar el estado',
-      });
-    }
-  },
-}));
+      await runCommand(
+        () => apiClient.setState(id, nextState),
+        { kind: 'patch', patch },
+        'No se pudo actualizar el estado',
+      );
+    },
+  };
+});
