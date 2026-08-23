@@ -1,7 +1,7 @@
 import type { Context } from 'grammy';
 import type { AirConditionerService } from '../domain/air-conditioner-service.ts';
 import type { ScheduleService } from '../domain/schedule-service.ts';
-import { editSafe } from './edit-message.ts';
+import { answerCallbackSafe, editSafe } from './edit-message.ts';
 import { formatHomeText } from './copy.ts';
 import { homeKeyboard } from './keyboards.ts';
 import type { TelegramLiveViews } from './live-views.ts';
@@ -47,14 +47,14 @@ export async function handleScheduleCallback(input: {
 }): Promise<boolean> {
   const action = parseScheduleCallback(input.data);
   if (!action) {
-    await input.ctx.answerCallbackQuery({ text: 'Acción no válida' });
+    await answerCallbackSafe(input.ctx, { text: 'Acción no válida' });
     return true;
   }
 
   const { ctx, service, schedules, live, sessions, timeZone } = input;
   const chatId = ctx.chat?.id;
   if (chatId === undefined) {
-    await ctx.answerCallbackQuery();
+    await answerCallbackSafe();
     return true;
   }
 
@@ -62,28 +62,28 @@ export async function handleScheduleCallback(input: {
     case 'new': {
       const draft = sessions.start(chatId);
       await showWizard(ctx, service, live, draft);
-      await ctx.answerCallbackQuery();
+      await answerCallbackSafe();
       return true;
     }
     case 'list':
       sessions.clear(chatId);
       await showList(ctx, service, schedules, live, timeZone);
-      await ctx.answerCallbackQuery();
+      await answerCallbackSafe();
       return true;
     case 'home':
       sessions.clear(chatId);
       await showHome(ctx, service, live);
-      await ctx.answerCallbackQuery();
+      await answerCallbackSafe();
       return true;
     case 'cancel':
       sessions.clear(chatId);
       await showHome(ctx, service, live);
-      await ctx.answerCallbackQuery({ text: 'Cancelado' });
+      await answerCallbackSafe({ text: 'Cancelado' });
       return true;
     case 'remove': {
       schedules.remove(action.id);
       await showList(ctx, service, schedules, live, timeZone);
-      await ctx.answerCallbackQuery({ text: 'Programa eliminado' });
+      await answerCallbackSafe({ text: 'Programa eliminado' });
       return true;
     }
     default:
@@ -92,19 +92,19 @@ export async function handleScheduleCallback(input: {
 
   const current = sessions.get(chatId);
   if (!current) {
-    await ctx.answerCallbackQuery({ text: 'Sesión caducada. Usa /schedule' });
+    await answerCallbackSafe({ text: 'Sesión caducada. Usa /schedule' });
     return true;
   }
 
   if (action.type === 'stay') {
     await showWizard(ctx, service, live, current);
-    await ctx.answerCallbackQuery();
+    await answerCallbackSafe();
     return true;
   }
 
   if (action.type === 'save') {
     if (!isCompleteDraft(current)) {
-      await ctx.answerCallbackQuery({ text: 'Faltan datos' });
+      await answerCallbackSafe({ text: 'Faltan datos' });
       return true;
     }
     const saved = schedules.create({
@@ -119,19 +119,19 @@ export async function handleScheduleCallback(input: {
     const air = service.get(saved.airConditionerId);
     await editSafe(ctx, formatScheduleSaved(air.name, current), scheduleListKeyboard(schedules.list(), service.list()));
     trackWizard(ctx, live);
-    await ctx.answerCallbackQuery({ text: 'Programa guardado' });
+    await answerCallbackSafe({ text: 'Programa guardado' });
     return true;
   }
 
   const next = applyWizardAction(current, action);
   if (!next) {
-    await ctx.answerCallbackQuery({ text: 'Acción no válida' });
+    await answerCallbackSafe({ text: 'Acción no válida' });
     return true;
   }
 
   sessions.set(chatId, next);
   await showWizard(ctx, service, live, next);
-  await ctx.answerCallbackQuery();
+  await answerCallbackSafe();
   return true;
 }
 

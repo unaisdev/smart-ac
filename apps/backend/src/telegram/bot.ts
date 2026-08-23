@@ -11,7 +11,7 @@ import type { AirConditionerService } from '../domain/air-conditioner-service.ts
 import type { ScheduleService } from '../domain/schedule-service.ts';
 import { isAuthorizedTelegramUser } from './auth.ts';
 import { formatControlText, formatHomeText } from './copy.ts';
-import { editSafe } from './edit-message.ts';
+import { answerCallbackSafe, editSafe } from './edit-message.ts';
 import { controlKeyboard, homeKeyboard } from './keyboards.ts';
 import { TelegramLiveViews } from './live-views.ts';
 import { handleScheduleCallback, replyScheduleWizard } from './schedule-bot.ts';
@@ -43,6 +43,9 @@ export async function startTelegramBot(
 
   const allowed = config.telegramAllowedUserIds;
   const bot = new Bot(token);
+  bot.catch((error) => {
+    logger.error(error, 'Telegram update handler error');
+  });
   const live = new TelegramLiveViews();
   const sessions = new WizardSessions();
   const stopListening = service.onChanged(async () => {
@@ -54,7 +57,7 @@ export async function startTelegramBot(
     if (userId === undefined || !isAuthorizedTelegramUser(userId, allowed)) {
       await ctx.reply('⛔ No tienes permiso para controlar estos dispositivos.');
       if (ctx.callbackQuery) {
-        await ctx.answerCallbackQuery();
+        await answerCallbackSafe(ctx);
       }
       return;
     }
@@ -105,7 +108,7 @@ export async function startTelegramBot(
 
       const action = parseCallback(data);
       if (!action) {
-        await ctx.answerCallbackQuery({ text: 'Acción no válida' });
+        await answerCallbackSafe(ctx, { text: 'Acción no válida' });
         return;
       }
 
@@ -113,18 +116,18 @@ export async function startTelegramBot(
         const air = service.get(action.id);
         await editSafe(ctx, formatControlText(air), controlKeyboard(air));
         trackControl(ctx, live, action.id);
-        await ctx.answerCallbackQuery();
+        await answerCallbackSafe(ctx);
         return;
       }
 
       const result = await applyAction(service, action);
       trackControl(ctx, live, action.id);
-      await ctx.answerCallbackQuery({
+      await answerCallbackSafe(ctx, {
         text: result.commandSent ? 'Orden enviada' : 'Error al enviar',
       });
     } catch (error) {
       logger.error(error);
-      await ctx.answerCallbackQuery({ text: 'Error' });
+      await answerCallbackSafe(ctx, { text: 'Error' });
     }
   });
 
@@ -169,7 +172,7 @@ async function editHome(
   const airs = service.list();
   await editSafe(ctx, formatHomeText(airs), homeKeyboard(airs));
   trackHome(ctx, live);
-  await ctx.answerCallbackQuery();
+  await answerCallbackSafe(ctx);
 }
 
 function trackHome(ctx: Context, live: TelegramLiveViews): void {
