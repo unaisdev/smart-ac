@@ -3,6 +3,7 @@
     "name": "Smart AC",
     "slug": "smart-ac",
     "version": "0.1.0",
+    "main": "index.ts",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",

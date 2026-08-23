@@ -23,7 +23,46 @@ HTTP solo por `@smart-ac/api-client`.
    - Emulador Android: `http://127.0.0.1:3000` + `adb reverse tcp:3000 tcp:3000` (o `http://10.0.2.2:3000`)
    - Dispositivo físico: `http://<IP-LAN-del-Mac>:3000`
 3. Desde la raíz: `pnpm mobile` (o `pnpm --filter @smart-ac/mobile start`).
-4. Android + Expo Go: con un emulador arrancado, `pnpm --filter @smart-ac/mobile android` (abre Expo Go).
+4. **Expo Go** (rápido): escanea el QR. Dispositivo físico → `EXPO_PUBLIC_API_BASE_URL=http://<IP-LAN-del-Mac>:3000`.
+5. **APK nativo (debug)** — siempre desde `apps/mobile`, no desde la raíz del monorepo:
+
+```bash
+adb connect <IP-móvil>:<puerto>   # depuración WiFi
+cd apps/mobile
+npx expo prebuild --platform android   # solo la primera vez
+pnpm android                           # compila, instala APK y arranca Metro
+```
+
+Si ves `Unable to resolve "../../App"`, borra `android/` en la **raíz** del repo (generado por error) y repite desde `apps/mobile`.
+
+## APK release (sin Metro)
+
+La app va **embebida** en el APK. No hace falta `pnpm mobile` al usarla.
+
+1. Ajusta `apps/mobile/.env` (la URL del API se **quema** en el build):
+
+```env
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.199:3000
+EXPO_PUBLIC_API_SECRET=dev-secret-change-me
+```
+
+2. Genera el APK:
+
+```bash
+cd apps/mobile
+pnpm build:android:release
+```
+
+3. Instala en el móvil (USB o WiFi):
+
+```bash
+adb connect <IP>:<puerto>   # si usas depuración WiFi
+adb install -r android/app/build/outputs/apk/release/app-release.apk
+```
+
+El APK queda en `apps/mobile/android/app/build/outputs/apk/release/app-release.apk` (~75 MB).
+
+**Nota:** esta build usa firma **debug** (válida para instalar en casa). Para Play Store haría falta un keystore de release propio. Si cambias la IP del backend, **recompila** el APK.
 
 ## Estructura
 
