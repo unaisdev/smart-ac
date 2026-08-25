@@ -2,7 +2,6 @@ import { useCallback, useEffect } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   RefreshControl,
   Text,
   View,
@@ -12,7 +11,7 @@ import type { AirConditionerView } from '@smart-ac/shared';
 
 import { useDevicesStore } from '../../stores/devices-store';
 import { createStyles } from '../../theme/create-styles';
-import { colors, radius, spacing, typography } from '../../theme/tokens';
+import { colors, spacing, typography } from '../../theme/tokens';
 import { AirConditionerCard } from '../base/air-conditioner-card';
 import { BackendStatusLine } from '../base/backend-status-line';
 import { ScreenNames, type RootStackParamList } from '../navigation/screen-names';
@@ -41,26 +40,11 @@ export const DeviceListScreen = ({ navigation }: Props) => {
     [navigation],
   );
 
-  const handleOpenSchedules = useCallback(() => {
-    navigation.navigate(ScreenNames.ScheduleList);
-  }, [navigation]);
-
   const renderItem = useCallback(
     ({ item }: { item: AirConditionerView }) => (
       <AirConditionerCard device={item} onPress={() => handleOpenDevice(item.id)} />
     ),
     [handleOpenDevice],
-  );
-
-  const listFooter = (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Programas"
-      onPress={handleOpenSchedules}
-      style={({ pressed }) => [styles.schedulesButton, pressed && styles.pressed]}
-    >
-      <Text style={styles.schedulesLabel}>Programas</Text>
-    </Pressable>
   );
 
   return (
@@ -73,7 +57,6 @@ export const DeviceListScreen = ({ navigation }: Props) => {
       {isLoading && devices.length === 0 ? (
         <View style={styles.loadingWrap}>
           <ActivityIndicator color={colors.accent} style={styles.loader} />
-          {listFooter}
         </View>
       ) : (
         <FlatList
@@ -82,7 +65,6 @@ export const DeviceListScreen = ({ navigation }: Props) => {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
-          ListFooterComponent={listFooter}
           refreshControl={
             <RefreshControl
               refreshing={isLoading}
@@ -135,22 +117,5 @@ const styles = createStyles({
     color: colors.textMuted,
     textAlign: 'center',
     marginTop: spacing.xl,
-  },
-  schedulesButton: {
-    marginTop: spacing.l,
-    alignSelf: 'stretch',
-    backgroundColor: colors.surface,
-    borderRadius: radius.m,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.s,
-    alignItems: 'center',
-  },
-  schedulesLabel: {
-    ...typography.bodyBold,
-    color: colors.accent,
-  },
-  pressed: {
-    opacity: 0.7,
   },
 });
