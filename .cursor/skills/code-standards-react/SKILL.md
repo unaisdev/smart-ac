@@ -51,7 +51,7 @@ export const DeviceCard = ({ name }: Props) => { ... };
 
 ## Navigation
 
-- React Navigation stack; typed screen names — **no Expo Router** in MVP.
+- React Navigation stack; typed screen names — **no Expo Router**.
 
 ## Data & architecture (Smart AC)
 

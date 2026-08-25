@@ -1,6 +1,6 @@
 # IR — mando Johnson (Midea RG10)
 
-Decisión de protocolo y límites del **replay RAW** (Fases 2–3). Plan general: [`PLAN.md`](PLAN.md).
+Decisión de protocolo y límites del **replay RAW**. Producto V1: solo **power on/off** ([`SPECS.md`](SPECS.md)). Temp± y encoder con estado son **post-V1**. Plan: [`PLAN.md`](PLAN.md).
 
 ## Decisión
 

@@ -1,6 +1,8 @@
 # `packages/api-client`
 
-Cliente HTTP tipado de la API Smart AC. Lo usa la app Expo (y tests). Los componentes **no** hacen `fetch` directo.
+Cliente HTTP tipado. V1: listar aires y `setPower`. SSE opcional (compile-fix Expo).
+
+Los componentes **no** hacen `fetch` directo.
 
 ```ts
 import { SmartAcApiClient } from '@smart-ac/api-client';
@@ -11,5 +13,5 @@ const client = new SmartAcApiClient({
 });
 
 await client.listAirConditioners();
-await client.listSchedules();
+await client.setPower('ac-salon', true);
 ```

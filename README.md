@@ -1,106 +1,99 @@
 # Smart AC
 
-Control remoto de aires acondicionados **Midea** por infrarrojos, desde Telegram y desde una app móvil.
+Control remoto de aires acondicionados **Johnson** (mando familia **Midea RG10**) por infrarrojos, desde **Telegram**.
 
-Proyecto **open source**: cualquiera puede montarlo en casa con un ESP32, un receptor IR y un LED infrarrojo. No hay que abrir el aire ni modificar su electrónica.
+**V1:** encender y apagar. El backend corre en casa. No hace falta servidor público ni abrir puertos del router.
 
-> Estado actual: **fase 8 en curso (Expo)**. Backend + Telegram contra mock listos; firmware y hardware aún no. Empieza por [`docs/SPECS.md`](docs/SPECS.md), [`docs/BACKEND.md`](docs/BACKEND.md), [`docs/DEPLOY.md`](docs/DEPLOY.md), [`docs/PLAN.md`](docs/PLAN.md) y [`docs/MATERIALS.md`](docs/MATERIALS.md).
+Proyecto **open source**: cualquiera puede montarlo con un ESP32, un receptor IR y un LED infrarrojo. No hay que abrir el aire ni modificar su electrónica.
+
+> Empieza por [`docs/SPECS.md`](docs/SPECS.md), [`docs/BACKEND.md`](docs/BACKEND.md), [`docs/DEPLOY.md`](docs/DEPLOY.md), [`docs/PLAN.md`](docs/PLAN.md) y [`docs/MATERIALS.md`](docs/MATERIALS.md).
 
 ```text
-                         INTERNET
-                            │
-              ┌─────────────┴─────────────┐
-              │                           │
-         Telegram Bot                App Expo
-              │                           │
-              └─────────────┬─────────────┘
-                            │
-                       Backend API
-                            │
-                           MQTT
-                            │
-                         ESP32
-                            │
-                            IR
-                  ┌─────────┴─────────┐
-                  ▼                   ▼
-               Aire #1             Aire #2
-               (Midea)             (Midea)
+                    Telegram Cloud
+                          ▲
+                   long polling
+                          │
+                    Backend API
+                      (casa)
+                          │
+                         MQTT
+                          │
+                        ESP32
+                          │
+                          IR
+                ┌─────────┴─────────┐
+                ▼                   ▼
+             Aire #1             Aire #2
+            (Johnson)           (Johnson)
 ```
 
-## Qué hace
+## Qué hace (V1)
 
-- Controla **dos (o más) aires** Midea con mando IR de la familia **RG10**.
-- Funciona desde **casa y fuera de casa**, sin abrir puertos del router: el ESP32 sale hacia MQTT.
-- El bot de Telegram y la app Expo usan **la misma API**. Ninguno habla IR ni MQTT directamente.
-- Distingue **estado deseado** (última orden enviada) de **estado real** (desconocido con IR puro).
-- Está pensado para sustituir IR por WiFi/protocolo local Midea más adelante, sin cambiar Telegram ni la app.
+- Controla **dos (o más) aires** Johnson / RG10: **encender y apagar**.
+- Funciona **desde casa y fuera de casa** vía Telegram (la nube de Telegram es el puente). El ESP32 y el backend salen hacia MQTT / Telegram; no hay que abrir NAT.
+- Distingue **estado deseado** (última orden) de **estado real** (desconocido con IR puro).
+- Está pensado para añadir modo, temperatura y una app más adelante, sin cambiar esa arquitectura.
 
-## Qué no hace (de momento)
+## Qué no hace (V1)
 
+- No cambia modo, temperatura, ventilador ni swing.
+- No hay programas horarios.
+- No hay app Expo como cliente soportado (el teléfono tendría que alcanzar tu API).
 - No modifica el aire acondicionado.
 - No afirma que el aire “está encendido” solo porque se haya enviado IR.
 - No expone MQTT a Internet sin autenticación.
-- No implementa Home Assistant ni escenas en el MVP. Los programas horarios sí (Telegram + Expo; el backend ejecuta).
+- No exige VM en la nube ni webhook.
 
 ## Documentación
 
 | Documento | Contenido |
 | --- | --- |
-| [`docs/SPECS.md`](docs/SPECS.md) | Qué construir y por qué: arquitectura, contratos, seguridad, MVP |
+| [`docs/SPECS.md`](docs/SPECS.md) | Qué construir: arquitectura, contratos, V1 |
 | [`docs/BACKEND.md`](docs/BACKEND.md) | Backend: Fastify, SQLite, Telegram en el mismo proceso |
-| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Qué se despliega 24/7 y cómo (Oracle Always Free, 0 €/mes) |
-| [`docs/PLAN.md`](docs/PLAN.md) | En qué orden: fases incrementales y criterios de salida |
-| [`docs/MATERIALS.md`](docs/MATERIALS.md) | Lista de materiales, cableado, pines y presupuesto |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Cómo contribuir (docs, hardware, firmware, apps) |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | V1 en casa (0 €) y opción nube post-V1 |
+| [`docs/PLAN.md`](docs/PLAN.md) | Fases y criterios de salida |
+| [`docs/MATERIALS.md`](docs/MATERIALS.md) | Lista de materiales, cableado, pines |
+| [`docs/IR-JOHNSON.md`](docs/IR-JOHNSON.md) | Protocolo IR (investigación; temp± es post-V1) |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Cómo contribuir |
 
 ## Estructura del repositorio
 
 ```text
 smart-ac/
 ├── apps/
-│   ├── backend/          # API REST + Telegram (un proceso)
-│   ├── telegram-bot/     # Reservado; el MVP no lo usa
-│   └── mobile/           # App React Native + Expo
+│   ├── backend/          # API REST + Telegram (un proceso) — cliente V1
+│   ├── telegram-bot/     # Reservado; el bot vive en backend
+│   └── mobile/           # Expo; fuera de V1 (compile-fix)
 ├── packages/
-│   ├── shared/           # Tipos y contratos compartidos
-│   └── api-client/       # Cliente HTTP para la API
+│   ├── shared/           # Tipos (V1: AirState.power)
+│   └── api-client/       # Cliente HTTP
 ├── firmware/
-│   └── esp32/            # Firmware ESP32 (WiFi, MQTT, IR)
+│   └── esp32/            # WiFi, MQTT, IR power on/off
 ├── docker/               # Compose: backend + Mosquitto
-├── docs/                 # Specs, backend, deploy, plan, materiales
-├── .env.example
-├── CONTRIBUTING.md
+├── docs/
 └── README.md
 ```
 
-`apps/telegram-bot` y `firmware/` siguen reservados. Backend, Telegram, `packages/shared`, `packages/api-client` y `apps/mobile` (Expo) ya tienen código.
-
 ## Hardware mínimo
-
-Para el prototipo hace falta:
 
 - ESP32-WROOM-32 (DevKit V1)
 - Receptor IR VS1838B (~38 kHz)
 - LED IR 940 nm (mejor con transistor NPN)
 - Breadboard, cables Dupont y USB
 
-Detalle, cantidades, resistencias y esquema de conexionado: [`docs/MATERIALS.md`](docs/MATERIALS.md).
+Detalle: [`docs/MATERIALS.md`](docs/MATERIALS.md).
 
 ## Cómo se desarrolla
 
-No se construye todo de golpe. Cada fase tiene que funcionar antes de pasar a la siguiente:
-
-1. ESP32 + receptor IR (captura del mando original)
-2. Identificar protocolo Midea (librería existente o RAW)
-3. Emisor IR → el aire responde
+1. ESP32 + receptor IR (captura del mando)
+2. Identificar protocolo (RG10 / COOLIX / BOSCH144)
+3. Emisor IR → power on/off
 4. WiFi
-5. MQTT
+5. MQTT (`state.power`)
 6. Backend
-7. Telegram
-8. Expo
+7. Telegram (long polling)
 
-Mientras no haya hardware, el backend usará un **transporte mock** para poder desarrollar Telegram y la app.
+Mientras no haya hardware, el backend usa un **transporte mock**.
 
 ## Seguridad
 
@@ -111,8 +104,8 @@ Mientras no haya hardware, el backend usará un **transporte mock** para poder d
 
 ## Licencia
 
-[MIT](LICENSE). Hardware de referencia, firmware y software se publican para que cualquiera pueda reproducir el montaje.
+[MIT](LICENSE).
 
 ## Contribuir
 
-Lee [`CONTRIBUTING.md`](CONTRIBUTING.md). Issues y PRs son bienvenidos: captura de protocolos, modelos Midea distintos, traducciones, hardware y código.
+Lee [`CONTRIBUTING.md`](CONTRIBUTING.md).
