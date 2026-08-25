@@ -2,25 +2,22 @@
 
 Gracias por querer montar, mejorar o documentar este proyecto. Es hardware + software de código abierto: lo útil es que otra persona pueda reproducirlo en su casa.
 
-Este repositorio está ahora mismo en **fase 6** (backend + mock). Firmware, Telegram y Expo aún no. Las contribuciones más valiosas hoy son:
+**V1** es encender y apagar desde Telegram (backend en casa, long polling). Expo no es cliente soportado. Las contribuciones más valiosas hoy:
 
 - aclarar o corregir [`docs/SPECS.md`](docs/SPECS.md)
-- concretar el backend o el despliegue en [`docs/BACKEND.md`](docs/BACKEND.md) y [`docs/DEPLOY.md`](docs/DEPLOY.md)
-- concretar fases en [`docs/PLAN.md`](docs/PLAN.md)
-- mejorar la lista de materiales y el cableado en [`docs/MATERIALS.md`](docs/MATERIALS.md)
-- anotar mandos Midea / RG10 reales (fotos, capturas IR, modelo del aire)
-
-Cuando exista más código, se aplicarán las mismas reglas.
+- firmware MQTT + replay IR de power on/off
+- el bot de Telegram recortado a Encender/Apagar
+- anotar mandos Johnson / RG10 reales (fotos, capturas IR, modelo del aire)
 
 ## Principios
 
 1. **Incremental.** Una fase funcional antes de la siguiente. Ver el [plan](docs/PLAN.md).
-2. **No inventar el protocolo IR.** Primero librerías existentes (IRremoteESP8266 / ESPHome Midea). Si no encajan, captura RAW y análisis. Nunca asumir que un pulso = un botón.
-3. **Los mandos de AC envían estado completo.** El sistema mantiene un objeto de estado; no comandos sueltos si el protocolo no lo permite.
-4. **IR no es verdad absoluta.** Distinguir `desiredState` y `reportedState`. No decirle al usuario que el aire “está encendido” solo porque se envió IR.
-5. **Telegram y Expo no hablan con el ESP32.** Pasan por `AirConditionerService` → transporte → MQTT → firmware.
-6. **El transporte es sustituible.** IR hoy; Midea local / WiFi / UART mañana, sin cambiar las apps.
-7. **Nada de secretos en Git.** Ni tokens, ni WiFi, ni MQTT, ni IDs de Telegram reales en issues o PRs.
+2. **No inventar el protocolo IR.** Primero librerías existentes. Si no encajan, captura RAW.
+3. **Los mandos de AC envían estado completo.** En V1 el producto solo expone `power`; el frame completo vive en las capturas RAW.
+4. **IR no es verdad absoluta.** Distinguir `desiredState` y `reportedState`. No decir que el aire “está encendido” solo porque se envió IR.
+5. **Telegram no habla con el ESP32.** Pasa por `AirConditionerService` → transporte → MQTT → firmware.
+6. **El transporte es sustituible.** IR hoy; Midea local / WiFi / UART mañana.
+7. **Nada de secretos en Git.** Ni tokens, ni WiFi, ni MQTT, ni IDs de Telegram reales.
 
 ## Cómo empezar
 
@@ -33,37 +30,39 @@ Cuando exista más código, se aplicarán las mismas reglas.
 
 ### Documentación
 
-- Correcciones de arquitectura, contratos MQTT/REST, o criterios de MVP.
-- Traducciones (el idioma principal del repo es español; un README en inglés es bienvenido).
-- Guías de montaje más claras, tablas de compatibilidad de mandos.
+- Correcciones de arquitectura, contratos MQTT/REST, o criterios de V1.
+- Traducciones (el idioma principal del repo es español).
+- Guías de montaje.
 
 ### Hardware
 
-- Confirmación de que el BOM funciona con un modelo concreto de Midea.
+- Confirmación del BOM con un modelo concreto.
 - Esquemas de la etapa de potencia del LED IR.
-- Notas de alcance, ángulo y dos emisores vs uno.
 - **No** publiques capturas que incluyan redes WiFi, tokens o IDs personales.
 
-### Firmware (cuando exista)
+### Firmware
 
-- Captura IR reproducible (RAW + frecuencia + botón pulsado).
-- Encoder/decoder solo si se ha demostrado que las librerías no bastan.
+- Captura IR reproducible (RAW + frecuencia + botón). V1: power on/off.
+- Encoder/decoder de temperatura: post-V1.
 - El loop principal no debe bloquearse. Reconexión WiFi/MQTT automática.
 
-### Backend, Telegram, Expo (cuando existan)
+### Backend y Telegram
 
-- Reutilizar tipos de `packages/shared`.
-- No hacer `fetch` desde componentes; usar `packages/api-client`.
+- Reutilizar tipos de `packages/shared` (`AirState { power }` en V1).
 - Autorización de Telegram **solo** por user ID.
 - Cubrir el camino mock (sin ESP32) y el camino real.
 
-## Estilo (cuando haya código)
+### Expo
+
+Fuera de V1. Si tocas `apps/mobile`, que compile contra el contrato actual; no lo documentes como cliente soportado.
+
+## Estilo
 
 - TypeScript en apps y packages.
 - pnpm como gestor del monorepo.
 - Named exports, sin barrels `index.ts` innecesarios.
-- Firmware ESP32: C++ / Arduino o ESP-IDF; se decidirá en la fase 1 y se documentará en `firmware/esp32/`.
-- Commits en inglés, imperativo, una línea: `feat(firmware): capture raw IR frames`.
+- Firmware ESP32: PlatformIO, C++ / Arduino.
+- Commits en inglés, imperativo: `feat(firmware): capture raw IR frames`.
 
 ## Seguridad
 
@@ -74,12 +73,8 @@ Nunca:
 - fiarse del username de Telegram
 - abrir puertos del router “para probar”
 
-Si encuentras un problema de seguridad, descríbelo en un issue **sin** pegar secretos ni dumps de red con credenciales.
+Si encuentras un problema de seguridad, descríbelo en un issue **sin** pegar secretos.
 
 ## Código de conducta (corto)
 
-Sé respetuoso. Este proyecto lo montan aficionados en su salón. Asume buena fe, documenta lo que probaste, y no ridiculices un mando o un aire distinto al tuyo: esa diversidad es precisamente lo que hay que soportar.
-
-## Licencia
-
-Al contribuir, aceptas que tu trabajo se publique bajo [MIT](LICENSE).
+Sé respetuoso. Este repo es para montar un aire en casa, no para debates de marca. Issues y PRs en español o inglés.

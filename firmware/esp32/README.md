@@ -1,6 +1,8 @@
 # `firmware/esp32`
 
-Firmware del ESP32-WROOM-32 (DevKit V1): captura IR (Fase 1), luego WiFi, MQTT y emisión IR.
+Firmware del ESP32-WROOM-32 (DevKit V1): captura IR, WiFi, MQTT y emisión IR.
+
+**V1:** replay RAW de **power on/off**. Temp± y encoder COOLIX son post-V1 ([`IR-JOHNSON.md`](../../docs/IR-JOHNSON.md)).
 
 Conexionado: [`MATERIALS.md`](../../docs/MATERIALS.md). Plan: [`PLAN.md`](../../docs/PLAN.md).
 
