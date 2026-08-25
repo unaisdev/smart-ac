@@ -1,11 +1,4 @@
-import type {
-  AirConditionerSchedule,
-  AirConditionerView,
-  AirMode,
-  AirState,
-  CreateScheduleInput,
-  FanSpeed,
-} from '@smart-ac/shared';
+import type { AirConditionerView } from '@smart-ac/shared';
 import {
   createAirConditionerChangeSubscription,
   type AirConditionerChangeHandler,
@@ -53,60 +46,10 @@ export class SmartAcApiClient {
     return this.request<AirConditionerView>('GET', `/api/air-conditioners/${encodeURIComponent(id)}`);
   }
 
-  setState(id: string, state: AirState): Promise<CommandResult> {
-    return this.request<CommandResult>('POST', `/api/air-conditioners/${encodeURIComponent(id)}/state`, state);
-  }
-
   setPower(id: string, power: boolean): Promise<CommandResult> {
     return this.request<CommandResult>('POST', `/api/air-conditioners/${encodeURIComponent(id)}/power`, {
       power,
     });
-  }
-
-  setTemperature(id: string, temperature: number): Promise<CommandResult> {
-    return this.request<CommandResult>(
-      'POST',
-      `/api/air-conditioners/${encodeURIComponent(id)}/temperature`,
-      { temperature },
-    );
-  }
-
-  setMode(id: string, mode: AirMode): Promise<CommandResult> {
-    return this.request<CommandResult>('POST', `/api/air-conditioners/${encodeURIComponent(id)}/mode`, {
-      mode,
-    });
-  }
-
-  setFan(id: string, fan: FanSpeed): Promise<CommandResult> {
-    return this.request<CommandResult>('POST', `/api/air-conditioners/${encodeURIComponent(id)}/fan`, {
-      fan,
-    });
-  }
-
-  setSwing(id: string, swing: boolean): Promise<CommandResult> {
-    return this.request<CommandResult>('POST', `/api/air-conditioners/${encodeURIComponent(id)}/swing`, {
-      swing,
-    });
-  }
-
-  listSchedules(): Promise<AirConditionerSchedule[]> {
-    return this.request<AirConditionerSchedule[]>('GET', '/api/schedules');
-  }
-
-  createSchedule(input: CreateScheduleInput): Promise<AirConditionerSchedule> {
-    return this.request<AirConditionerSchedule>('POST', '/api/schedules', input);
-  }
-
-  updateSchedule(id: string, input: CreateScheduleInput): Promise<AirConditionerSchedule> {
-    return this.request<AirConditionerSchedule>(
-      'PUT',
-      `/api/schedules/${encodeURIComponent(id)}`,
-      input,
-    );
-  }
-
-  deleteSchedule(id: string): Promise<void> {
-    return this.request<void>('DELETE', `/api/schedules/${encodeURIComponent(id)}`);
   }
 
   /**

@@ -15,7 +15,7 @@ export interface SubscribeAirConditionerChangesOptions {
 
 /**
  * Opens a long-lived SSE connection to `/api/events` and invokes `onChange`
- * whenever another client (or Telegram / schedule) updates an air conditioner.
+ * whenever another client (or Telegram) updates an air conditioner.
  * Returns an unsubscribe function that closes the stream and stops reconnects.
  *
  * Prefers XMLHttpRequest (reliable in React Native / Expo). Falls back to fetch
