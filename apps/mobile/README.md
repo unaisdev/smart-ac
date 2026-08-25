@@ -1,6 +1,10 @@
 # `apps/mobile`
 
-App React Native + Expo (TypeScript). Mando de los dos aires y **programas horarios** vía API REST.
+**Fuera de V1.** Esta app Expo no es un cliente soportado. El cliente V1 es Telegram.
+
+El código se mantiene para que el monorepo compile contra `AirState { power: boolean }` y para un uso posterior (LAN o hosting público). Hoy el móvil tiene que alcanzar el backend por HTTP (`POST` / SSE). Eso solo funciona en la misma LAN (`http://192.168.x.x:3000`) o con una URL pública. Telegram no tiene esa limitación: usa long polling hacia la API de Telegram.
+
+No documentar ni tratar esta app como producto V1. No hay despliegue ni verificación en dispositivo más allá del typecheck.
 
 ## Estándares
 
@@ -15,7 +19,7 @@ TypeScript estricto, named exports, kebab-case, sin `React.FC`,
 estilos vía theme tokens + `createStyles`, Zustand, React Navigation (sin Expo Router),
 HTTP solo por `@smart-ac/api-client`.
 
-## Arranque
+## Arranque (LAN, no producto)
 
 1. Backend en local (`pnpm dev`) con `API_SECRET`.
 2. Copia `apps/mobile/.env.example` → `apps/mobile/.env` y ajusta la URL:
@@ -31,13 +35,14 @@ HTTP solo por `@smart-ac/api-client`.
 src/
   components/base|screens|navigation
   feedback/        # toasts de resultado de orden (success / warning / error)
-  stores/          # Zustand
+  stores/          # Zustand (lista + setPower + SSE)
   theme/           # tokens + createStyles
   config/          # API URL + client
   utils/
 ```
 
+Pantallas: lista de aires y mando con solo encendido/apagado (`PowerButton`).
 Feedback de órdenes: toasts apilados desde abajo (`ToastHost`).
-Tras cada mutación se muestra qué cambió y si el aire queda ON/OFF;
+Tras cada `setPower` se muestra ON/OFF;
 éxito si `commandSent`, warning si el controlador no envió IR / está offline,
 o error si la API falla.

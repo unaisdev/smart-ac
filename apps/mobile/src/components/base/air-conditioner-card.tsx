@@ -19,7 +19,7 @@ export const AirConditionerCard = ({ device, onPress }: Props) => {
     formatDeviceTitle(device.id, device.name),
     powerLabel,
     onlineLabel,
-    stateLine ?? undefined,
+    stateLine,
   ]
     .filter(Boolean)
     .join(', ');
@@ -39,11 +39,9 @@ export const AirConditionerCard = ({ device, onPress }: Props) => {
           {formatDeviceTitle(device.id, device.name)}
         </Text>
       </View>
-      {stateLine ? (
-        <Text style={styles.meta} numberOfLines={2}>
-          {stateLine}
-        </Text>
-      ) : null}
+      <Text style={styles.meta} numberOfLines={1}>
+        Última orden: {stateLine}
+      </Text>
     </Pressable>
   );
 };
