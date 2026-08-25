@@ -8,16 +8,10 @@ No documentar ni tratar esta app como producto V1. No hay despliegue ni verifica
 
 ## Estándares
 
-Ver:
-
-- `.cursor/rules/coding-standards.mdc`
-- `.cursor/rules/react-native.mdc`
-- `.cursor/rules/mobile-structure.mdc`
-- `.cursor/skills/code-standards-react/SKILL.md`
+Ver `.cursor/rules/` y `.cursor/skills/code-standards-react/SKILL.md`. HTTP solo por `@smart-ac/api-client`.
 
 TypeScript estricto, named exports, kebab-case, sin `React.FC`,
-estilos vía theme tokens + `createStyles`, Zustand, React Navigation (sin Expo Router),
-HTTP solo por `@smart-ac/api-client`.
+estilos vía theme tokens + `createStyles`, Zustand, React Navigation (sin Expo Router).
 
 ## Arranque (LAN, no producto)
 

@@ -1,10 +1,20 @@
 # Despliegue — Smart AC
 
-Cómo corre el sistema **24/7 con coste 0 €/mes**. Qué construye el backend está en [`BACKEND.md`](BACKEND.md). El producto está en [`SPECS.md`](SPECS.md).
+Qué construye el backend está en [`BACKEND.md`](BACKEND.md). El producto está en [`SPECS.md`](SPECS.md).
 
-El YAML de Compose de producción se añade en la [fase 6](PLAN.md). Este documento fija **qué** se despliega y **dónde**, para no improvisar servicios de pago.
+## V1 (este es el camino)
 
-Coste objetivo: **0 €/mes** (Oracle Cloud Always Free). Fallback: Hetzner CX22 (~4 €/mes) si no hay capacidad A1 o si Oracle reclama la VM.
+**Backend + Mosquitto en casa.** Telegram **long polling** (salida hacia `api.telegram.org`). ESP32 sale hacia MQTT en la LAN. Coste **0 €**. No hace falta IP pública, webhook, Caddy ni Oracle.
+
+Compose local: [`docker/README.md`](../docker/README.md). Deja el proceso Node encendido (PC, Raspberry, NAS). Un solo consumidor del bot token (evita 409).
+
+El resto de este documento es **post-V1**: VM pública si algún día hay app Expo desde fuera de casa o webhook.
+
+---
+
+# Post-V1 — VM pública (opcional)
+
+El YAML de Compose de producción se añade cuando se suba a la nube. Coste objetivo de esa opción: **0 €/mes** (Oracle Cloud Always Free). Fallback: Hetzner CX22 (~4 €/mes).
 
 ---
 
