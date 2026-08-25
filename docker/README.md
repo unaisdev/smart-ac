@@ -1,6 +1,6 @@
 # `docker`
 
-Compose **local**: Fastify + Mosquitto, SQLite en volumen. El YAML de producción (Caddy, MQTTS 8883) llega cuando se suba a Oracle; ver [`docs/DEPLOY.md`](../docs/DEPLOY.md).
+Compose **local**: Fastify + Mosquitto, SQLite en volumen. V1 corre así en casa (Telegram long polling). Una VM pública con Caddy/MQTTS es post-V1; ver [`docs/DEPLOY.md`](../docs/DEPLOY.md).
 
 ```bash
 # desde la raíz del repo

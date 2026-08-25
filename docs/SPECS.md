@@ -2,74 +2,69 @@
 
 Documento de **qué** y **por qué**. El orden de implementación está en [`PLAN.md`](PLAN.md). Los componentes físicos están en [`MATERIALS.md`](MATERIALS.md).
 
-Estado: **fase 6 en curso** (API + mock). Firmware, Telegram y Expo aún no.
+Estado: **V1** — encender y apagar dos aires Johnson (familia Midea RG10) desde Telegram. Sin servidor público. Expo no es cliente V1.
 
 ---
 
-## 1. Objetivo
+## 1. Objetivo (V1)
 
-Crear un sistema open source para controlar **dos unidades de aire acondicionado Midea** desde:
+Sistema open source para **encender y apagar** dos unidades de aire acondicionado (mando IR Johnson / familia **RG10**) desde un bot de Telegram.
 
-1. Un bot de Telegram.
-2. Una aplicación móvil React Native con Expo.
-3. Opcionalmente, más adelante, una API/web.
-
-Los aires usan mando IR de la familia **RG10**, con funciones como Power, Mode (Cool, Heat, Dry, Fan, Auto), temperatura, velocidad de ventilador, Swing, Turbo, Eco/Gear, Timer, LED, Clean y otras vía SET.
-
-El sistema inicial usa **solo infrarrojos**. No se modifica eléctricamente el aire.
+El sistema usa **solo infrarrojos**. No se modifica eléctricamente el aire.
 
 Cualquiera con un ESP32, un VS1838B y un LED IR 940 nm debe poder reproducir el montaje.
 
+El backend corre **en casa**. Telegram usa **long polling** (el proceso llama hacia `api.telegram.org`). El ESP32 sale hacia MQTT. No hace falta IP pública, webhook ni VM en la nube.
+
 ---
 
-## 2. Fuera de alcance (MVP)
+## 2. Fuera de alcance (V1)
 
+- Modo, temperatura, ventilador, swing, turbo, eco, LED, clean.
+- Programas horarios.
+- App Expo como cliente soportado (el código puede existir para más adelante; no es camino de producto).
+- Webhook de Telegram, túneles, Oracle Always Free.
 - Abrir el aire, soldar UART o sustituir la placa.
 - Afirmar estado real del aparato solo con IR.
 - Home Assistant, escenas, estadísticas y sensores de ambiente.
 - Exponer MQTT a Internet sin autenticación.
-- Expo Router, salvo que más adelante sea necesario.
 - Hablar MQTT desde la app móvil.
+
+Esas piezas van a **post-V1**.
 
 ---
 
 ## 3. Arquitectura
 
-La arquitectura debe permitir control **en casa y en remoto**, sin abrir puertos del router. El ESP32 mantiene una conexión **saliente** MQTT.
+Control **en casa y en remoto** (Telegram llega al móvil por la nube de Telegram). El backend y el broker MQTT viven en la LAN. El ESP32 mantiene una conexión **saliente** MQTT. El bot mantiene una conexión **saliente** a Telegram.
 
 ```text
-                         INTERNET
-                            │
-              ┌─────────────┴─────────────┐
-              │                           │
-         Telegram Bot                Expo App
-              │                           │
-              └─────────────┬─────────────┘
-                            │
-                       Backend API
-                            │
-                           MQTT
-                            │
-                      ┌─────┴─────┐
-                      │   ESP32   │
-                      └─────┬─────┘
-                            │
-                     IR transmitter
-                            │
-                ┌───────────┴───────────┐
-                ▼                       ▼
-             AC #1                   AC #2
-             Midea                   Midea
+                    Telegram Cloud
+                          ▲
+                   long polling
+                          │
+                    Backend API
+                    (casa, Fastify)
+                          │
+                         MQTT
+                          │
+                        ESP32
+                          │
+                          IR
+                ┌─────────┴─────────┐
+                ▼                   ▼
+             AC #1               AC #2
+            Johnson             Johnson
 ```
 
 ### Regla de desacoplamiento
 
-Nunca acoplar Telegram (ni Expo) al código IR.
+Nunca acoplar Telegram al código IR.
 
 ```text
 Incorrecto:  Telegram → IR
 
-Correcto:    Telegram / Expo
+Correcto:    Telegram
                  ↓
            AirConditionerService
                  ↓
@@ -81,8 +76,6 @@ Correcto:    Telegram / Expo
                  ↓
                 IR
 ```
-
-Telegram y la app usan exactamente la misma lógica de negocio.
 
 ### Transporte sustituible
 
@@ -96,15 +89,13 @@ interface AirConditionerTransport {
 }
 ```
 
-Implementaciones previstas:
+Implementaciones:
 
 | Transporte | Cuándo |
 | --- | --- |
 | `MockAirConditionerTransport` | Desarrollo sin hardware |
-| `IrTransport` | MVP (MQTT → ESP32 → IR) |
-| `MideaLocalTransport` | Futuro (dongle WiFi / protocolo local / UART) |
-
-Investigar más adelante: WiFi dongle Midea, protocolo local, UART/bus interno, ESPHome Midea.
+| `IrTransport` | V1 (MQTT → ESP32 → IR) |
+| `MideaLocalTransport` | Futuro |
 
 ---
 
@@ -112,105 +103,37 @@ Investigar más adelante: WiFi dongle Midea, protocolo local, UART/bus interno, 
 
 Ver lista completa, pines y presupuesto en [`MATERIALS.md`](MATERIALS.md).
 
-### Obligatorio
-
 | Pieza | Uso |
 | --- | --- |
-| ESP32-WROOM-32 / DevKit V1 | Controlador. No hace falta ESP32-S3 al inicio. |
-| VS1838B (~38 kHz) | Escuchar el mando original. |
-| LED IR 940 nm | Enviar órdenes al aire. |
+| ESP32-WROOM-32 / DevKit V1 | Controlador |
+| VS1838B (~38 kHz) | Escuchar el mando original (captura) |
+| LED IR 940 nm | Enviar órdenes al aire |
 
-El usuario dispone de un kit con VS1838B, otros receptores IR y LEDs 940 nm: **ese kit es válido** para el prototipo.
-
-### Prototipado
-
-Breadboard, cables Dupont, USB para alimentar y programar el ESP32.
-
-### Etapa de emisión
-
-- Primera prueba: LED IR + resistencia.
-- Versión definitiva: transistor NPN (2N2222 o BC337) + resistencia de base + resistencia limitadora del LED.
-
-El transistor aumenta potencia y alcance.
+Etapa de emisión: resistencia primero; transistor NPN para alcance.
 
 ---
 
 ## 5. Protocolo IR
 
-### Primer objetivo técnico (antes de Telegram o Expo)
+El mando es familia **Midea RG10** (Johnson). Cada pulsación envía **estado completo**, no un comando abstracto.
 
-```text
-Mando Midea  →  IR  →  VS1838B  →  ESP32
-```
+**V1 no elige** modo ni temperatura. Encender reproduce la captura `power-on`; apagar reproduce `power-off`. El aire queda en el setpoint que tenía esa captura. Detalle de protocolo: [`IR-JOHNSON.md`](IR-JOHNSON.md).
 
-El ESP32 debe recibir las órdenes reales. No asumir que se detectan de golpe propiedades como POWER, MODE=COOL, TEMP=24, FAN=AUTO, SWING=ON, TURBO=OFF. Primero hay que **capturar**.
+Prioridad: librería existente (IRremoteESP8266) o replay RAW. No inventar la trama.
 
-### Identificación
-
-El mando parece familia **Midea RG10**.
-
-Prioridad:
-
-1. Usar una implementación Midea existente si es compatible (ESPHome Midea IR, IRremote / IRremoteESP8266).
-2. Si no es compatible, capturar las señales del mando.
-3. Analizarlas.
-4. Crear encoder/decoder propio solo si hace falta.
-
-No implementar un protocolo desde cero si ya hay soporte. No inventar la trama. No asumir que una señal recibida es “un botón”: analizar la estructura real.
-
-### Estado completo, no teclas sueltas
-
-Muchos mandos de AC envían una **trama con el estado entero**, no un comando aislado. Pulsar “24 °C / COOL / FAN AUTO / SWING ON” puede emitir todo eso a la vez.
-
-El sistema mantiene internamente:
+Estado de producto V1:
 
 ```ts
 interface AirState {
   power: boolean;
-  mode: AirMode;
-  temperature: number;
-  fan: FanSpeed;
-  swing: boolean;
-  turbo: boolean;
-  eco: boolean;
-  clean: boolean;
-  led: boolean;
-}
-
-type AirMode = 'auto' | 'cool' | 'dry' | 'heat' | 'fan';
-type FanSpeed = 'auto' | 'low' | 'medium' | 'high';
-```
-
-No implementar comandos aislados si el protocolo exige construir la trama completa.
-
-### Modo aprendizaje
-
-Flujo:
-
-1. El sistema pide pulsar un botón del mando original.
-2. El VS1838B recibe la señal.
-3. El ESP32 la captura.
-4. Se almacena e identifica.
-5. Se puede reproducir después.
-
-Almacenamiento inicial RAW:
-
-```ts
-interface RawIrCommand {
-  deviceId: string;
-  name: string;
-  data: number[];
-  frequency: number;
 }
 ```
 
-Ejemplos de etiquetas: `LEARN POWER`, `LEARN COOL`, `LEARN HEAT`, `LEARN TEMP_24`, `LEARN FAN_AUTO`.
+MQTT y la API solo transportan `power`. El frame IR completo vive en las capturas RAW del firmware.
 
 ---
 
 ## 6. Dos aires
-
-Dispositivos iniciales:
 
 ```text
 ac-salon        nombre: Salón         ubicación: Salón
@@ -225,47 +148,26 @@ interface AirConditioner {
 }
 ```
 
-El ESP32 puede tener:
-
-- **Dos emisores IR** (uno hacia cada aparato), si están en posiciones distintas.
-- **Un solo emisor**, si ambos reciben bien desde el mismo sitio.
-
-La arquitectura debe permitir las dos opciones.
+Un emisor o dos, según alcance.
 
 ---
 
 ## 7. Firmware ESP32
 
-Responsabilidades:
+Responsabilidades V1:
 
-- Conectarse a WiFi y a MQTT.
-- Recibir comandos y ejecutar IR.
-- Mantener configuración local.
-- Publicar estado.
-- Modo aprendizaje.
-- Registrar errores.
-- Reconectar WiFi/MQTT automáticamente.
-- **No bloquear** el loop principal.
+- WiFi y MQTT, reconexión no bloqueante.
+- Recibir `setState` y emitir IR de **power on/off** (RAW).
+- Publicar ack / status. No fingir `reportedState`.
+- No bloquear el loop principal.
 
-Configuración (nunca en el repositorio):
-
-```env
-WIFI_SSID=
-WIFI_PASSWORD=
-MQTT_HOST=
-MQTT_PORT=
-MQTT_USERNAME=
-MQTT_PASSWORD=
-DEVICE_ID=
-```
+Credenciales **nunca** en Git (`secrets.h` ignorado).
 
 ---
 
 ## 8. MQTT
 
-Comunicación backend ↔ ESP32. El broker preferente es **Mosquitto**.
-
-Temas de ejemplo:
+Broker **Mosquitto**, en la red local (Compose). No exponer 1883 a Internet.
 
 ```text
 smartac/device/ac-controller/command
@@ -273,45 +175,18 @@ smartac/device/ac-controller/state
 smartac/device/ac-controller/status
 ```
 
-Comando:
+Comando V1:
 
 ```json
 {
   "deviceId": "ac-salon",
   "command": "setState",
-  "state": {
-    "power": true,
-    "mode": "cool",
-    "temperature": 24,
-    "fan": "auto",
-    "swing": false,
-    "turbo": false,
-    "eco": true
-  },
+  "state": { "power": true },
   "requestId": "uuid"
 }
 ```
 
-Respuesta:
-
-```json
-{
-  "deviceId": "ac-salon",
-  "requestId": "uuid",
-  "success": true,
-  "state": {
-    "power": true,
-    "mode": "cool",
-    "temperature": 24,
-    "fan": "auto",
-    "swing": false,
-    "turbo": false,
-    "eco": true
-  }
-}
-```
-
-Nunca exponer el broker a Internet sin autenticación.
+`success: true` significa **comando enviado**, no “el aire ejecutó la orden”. El firmware **solo lee `state.power`**.
 
 ---
 
@@ -321,123 +196,44 @@ Con IR **no sabemos** si el aire ejecutó la orden.
 
 | Campo | Significado |
 | --- | --- |
-| `desiredState` | Última orden que el sistema envió |
-| `reportedState` | Estado confirmado por el aparato (al inicio: desconocido) |
+| `desiredState` | Última orden que el sistema envió (`{ power }`) |
+| `reportedState` | Confirmado por el aparato. Con IR puro: `null` |
 
-```text
-Orden enviada:  AC Salón → COOL 24 °C
-Resultado:      commandSent = true
-                actualState = unknown
-```
-
-No decirle al usuario que el aire está encendido solo porque se envió IR.
-
-Si más adelante hay feedback por protocolo Midea interno/WiFi, entonces sí se puede rellenar `reportedState`.
-
-En la UI, un indicador verde **no** significa “confirmado por el aire”. Si solo hay estado deseado, mostrar algo como: `Última orden: COOL · 24 °C`.
+Copy: `Última orden: ON` / `Última orden: OFF`. Nunca “el aire está encendido” solo porque se envió IR.
 
 ---
 
 ## 10. Backend
 
-Única pieza que conoce Telegram, MQTT, dispositivos, usuarios, estados y configuración.
+Única pieza que conoce Telegram, MQTT, dispositivos y estado.
 
-Implementación (módulos, env, qué no entra en el MVP): [`BACKEND.md`](BACKEND.md). Dónde corre 24/7: [`DEPLOY.md`](DEPLOY.md).
+Stack: Node.js 22 LTS, TypeScript, Fastify, `mqtt.js`, SQLite, grammY **en el mismo proceso**. Detalle: [`BACKEND.md`](BACKEND.md). Camino 0 € en casa: [`DEPLOY.md`](DEPLOY.md).
 
-Stack:
-
-- Node.js 22 LTS + TypeScript
-- Fastify (API REST + webhook de Telegram, **un proceso**)
-- MQTT (`mqtt.js`) + SQLite
-- Telegram Bot API (grammY o Telegraf, mismo proceso)
-
-### Base de datos (prototipo)
-
-SQLite es suficiente. Tablas previstas:
-
-```text
-air_conditioners
-users
-telegram_users
-commands
-device_status
-ir_commands
-```
-
-No hace falta un esquema complejo al inicio.
-
-### API REST mínima
+### API REST V1
 
 ```http
+GET  /health
 GET  /api/air-conditioners
 GET  /api/air-conditioners/:id
 POST /api/air-conditioners/:id/power
-POST /api/air-conditioners/:id/state
-POST /api/air-conditioners/:id/temperature
-POST /api/air-conditioners/:id/mode
-POST /api/air-conditioners/:id/fan
-POST /api/air-conditioners/:id/swing
-GET  /api/schedules
-POST /api/schedules
-DELETE /api/schedules/:id
+GET  /api/events
 ```
 
-Ejemplo `POST /api/schedules`:
+`POST /api/air-conditioners/:id/power`:
 
 ```json
-{
-  "airConditionerId": "ac-salon",
-  "repeat": "daily",
-  "targetHour": 8,
-  "targetMinute": 0,
-  "leadMinutes": 60,
-  "state": {
-    "power": true,
-    "mode": "cool",
-    "temperature": 24,
-    "fan": "auto",
-    "swing": false,
-    "turbo": false,
-    "eco": false,
-    "led": true
-  }
-}
+{ "power": true }
 ```
 
-Ejemplo `POST /api/air-conditioners/ac-salon/state`:
+`GET /health` no exige secreto. El resto de `/api/*` usa `Authorization: Bearer <API_SECRET>`.
 
-```json
-{
-  "power": true,
-  "mode": "cool",
-  "temperature": 24,
-  "fan": "auto",
-  "swing": true,
-  "turbo": false,
-  "eco": true
-}
-```
-
-### Mock
-
-Antes de tener el ESP32, existe `MockAirConditionerTransport` para probar Telegram, Expo, API y base de datos sin hardware.
+Antes del ESP32: `MockAirConditionerTransport`.
 
 ---
 
-## 11. Bot de Telegram
+## 11. Bot de Telegram (cliente V1)
 
-Comandos mínimos (pero la UI preferida son **botones inline**, no teclear):
-
-```text
-/start  /help  /airs  /status
-/schedule  /programar
-```
-
-`/schedule` (alias `/programar`) abre un wizard: aire, hora objetivo, antelación, una vez o diario, y el estado deseado (power, modo, temperatura, fan, swing, turbo, eco, LED). El **backend** ejecuta el programa; no depende de que Telegram esté abierto.
-
-### Interfaz
-
-Pantalla de selección:
+Long polling. Comandos: `/start` `/help` `/airs` `/status`. UI con **botones inline**.
 
 ```text
 🏠 Smart AC
@@ -448,55 +244,23 @@ Selecciona un aire:
 [ 🛏 Dormitorio ]
 ```
 
-Control de un aire:
-
 ```text
 🛋 Salón
 
-Estado deseado:
-❄️ COOL
-🌡 24°C
-🌀 AUTO
-↕️ SWING OFF
+Última orden: ON
 
 [ 🔴 Apagar ]
-
-[ ❄️ Frío ] [ 🔥 Calor ]
-[ ➕ ] [ 24°C ] [ ➖ ]
-
-[ 🌀 Ventilador ]
-[ ↕️ Swing ]
-[ ⚡ Turbo ]
-[ 🌱 Eco ]
-
 [ 🔄 Actualizar ]
+[ ⬅️ Aires ]
 ```
-
-Resultado esperado al abrir el bot:
-
-```text
-🏠 Mis aires
-
-🛋 Salón
-❄️ COOL · 24°C
-
-🛏 Dormitorio
-⏻ OFF
-```
-
-Y poder controlar: ON/OFF, COOL, HEAT, DRY, AUTO, FAN, 16–30 °C, FAN AUTO/LOW/MED/HIGH, SWING, TURBO, ECO, LED, CLEAN.
 
 ### Seguridad
-
-Cualquiera no puede controlar los aires.
 
 ```env
 TELEGRAM_ALLOWED_USER_IDS=123456789,987654321
 ```
 
-Middleware `isAuthorizedTelegramUser()`. Autorización **solo por Telegram user ID**, nunca por username.
-
-Usuario no autorizado:
+Autorización **solo por Telegram user ID**. Usuario no autorizado:
 
 ```text
 ⛔ No tienes permiso para controlar estos dispositivos.
@@ -504,169 +268,27 @@ Usuario no autorizado:
 
 ---
 
-## 12. App React Native + Expo
+## 12. App React Native + Expo (fuera de V1)
 
-App independiente, TypeScript. Consume **la misma API** que Telegram. No habla MQTT.
+El código puede vivir en `apps/mobile` para no romper el monorepo. **No es cliente soportado** en V1: el teléfono tendría que alcanzar la API (LAN o URL pública). Telegram sí funciona desde fuera de casa sin IP pública.
 
-```text
-Expo → REST API → Backend → MQTT → ESP32
-```
-
-No usar Expo Router salvo que sea necesario.
-
-### Pantallas
-
-**Selección**
-
-```text
-Mis aires                    [Programas]
-
-🟢 Salón
-   Última orden: COOL · 24°C
-
-🟢 Dormitorio
-   Última orden: OFF
-```
-
-**Programas**
-
-Lista de programas activos (misma semántica que Telegram): aire, hora objetivo, antelación, once/daily, estado deseado, próxima ejecución. Crear vía wizard; borrar desde la lista. La ejecución la hace el backend (`ScheduleRunner`), no la app.
-
-**Wizard (Programar)**
-
-```text
-aire → hora objetivo → antelación → once|daily → estado deseado → confirmar
-```
-
-**Mando**
-
-```text
-Smart AC
-┌─────────────────────────┐
-│ 🛋 Salón                │
-│        ❄️ COOL          │
-│          24°C           │
-│      −           +      │
-│ AUTO   ❄️   🔥   💧    │
-│ Fan: AUTO               │
-│ [AUTO] [LOW] [MED] [HI] │
-│ ↕ Swing       🌱 Eco    │
-│ ⚡ Turbo       💡 LED   │
-│       ⏻ OFF             │
-└─────────────────────────┘
-```
-
-### Componentes reutilizables
-
-```text
-AirConditionerCard
-TemperatureControl
-ModeSelector
-FanSelector
-PowerButton
-SwingButton
-TurboButton
-EcoButton
-LedButton
-AirConditionerSelector
-ConnectionStatus
-```
-
-### Estado frontend
-
-Zustand, o React Context si el proyecto sigue siendo pequeño.
-
-```ts
-interface AirConditionerViewModel {
-  id: string;
-  name: string;
-  desiredState: AirState;
-  reportedState?: AirState;
-  online: boolean;
-}
-```
-
-### Capa API
-
-No hacer `fetch` desde componentes.
-
-```text
-src/api/client.ts
-src/api/airConditioners.ts
-```
-
-```ts
-getAirConditioners()
-getAirConditioner(id)
-setAirConditionerState(id, state)
-setPower(id, power)
-setTemperature(id, temperature)
-```
-
-### Actualización
-
-La app consulta `GET /api/air-conditioners` y refresca manualmente.
-
-Opcional posterior: WebSocket (ESP32 → MQTT → Backend → WebSocket → Expo) para cambios inmediatos.
+Post-V1: misma API, mismo `AirState`.
 
 ---
 
 ## 13. Tipos compartidos
 
-Viven en `packages/shared`. Backend, Telegram y Expo los reutilizan. Definición canónica: `AirState`, `AirMode`, `FanSpeed` (sección 5).
+Viven en `packages/shared`. Canónico V1: `AirState { power: boolean }`.
 
 ---
 
 ## 14. Docker
 
-Compose local (desarrollo):
-
-```text
-docker compose
-  ├── backend      # Fastify + Telegram, volumen SQLite
-  └── mosquitto    # 1883 solo en la red Docker
-```
-
-Producción (Oracle Always Free): Caddy + backend + Mosquitto TLS 8883. Detalle en [`DEPLOY.md`](DEPLOY.md).
-
-El ESP32 se conecta al broker por WiFi (red local o MQTT remoto autenticado). No va en Docker.
+Compose local: backend + Mosquitto (1883 en la red Docker). El ESP32 no va en Docker.
 
 ---
 
-## 15. Temporizadores
-
-El **backend** ejecuta los timers (SQLite + tick). No depender del móvil ni de que Telegram esté abierto.
-
-```ts
-interface AirConditionerSchedule {
-  id: string;
-  airConditionerId: string;
-  enabled: boolean;
-  repeat: 'once' | 'daily';
-  targetHour: number;
-  targetMinute: number;
-  leadMinutes: number;
-  executeHour: number;
-  executeMinute: number;
-  nextExecuteAt: string; // próxima ejecución, ISO UTC
-  lastFiredAt: string | null;
-  state: AirState;
-  createdAt: string;
-}
-```
-
-Hora civil: `Europe/Madrid` (`TZ`). Ejemplo: levantarse a las 08:00, 1 h antes → orden a las 07:00 (`executeHour`/`executeMinute`); `nextExecuteAt` es esa ocurrencia en UTC.
-
-UI:
-
-- Telegram: wizard `/schedule` / **Programar**
-- Expo: pantallas **Programas** + wizard (misma API `GET/POST/DELETE /api/schedules`)
-
-Tipos en `packages/shared` (`AirConditionerSchedule`, `CreateScheduleInput`).
-
----
-
-## 16. Seguridad
+## 15. Seguridad
 
 Nunca:
 
@@ -675,44 +297,27 @@ Nunca:
 - permitir que cualquier usuario de Telegram controle los dispositivos
 - abrir puertos innecesarios del router
 
-Variables (ver [`.env.example`](../.env.example) y [`BACKEND.md` §7](BACKEND.md)):
-
-```env
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_ALLOWED_USER_IDS=
-MQTT_USERNAME=
-MQTT_PASSWORD=
-DATABASE_URL=
-API_SECRET=
-PUBLIC_BASE_URL=
-WIFI_SSID=
-WIFI_PASSWORD=
-```
+Variables: [`.env.example`](../.env.example) y [`BACKEND.md` §7](BACKEND.md).
 
 ---
 
-## 17. MVP
+## 16. V1 está terminada cuando
 
-El MVP está terminado cuando:
-
-- [ ] ESP32 conectado a WiFi
-- [ ] VS1838B recibe el mando original
-- [ ] Se identifica el protocolo
-- [ ] ESP32 puede enviar IR
-- [ ] El aire responde
-- [ ] ESP32 controla AC #1
-- [ ] ESP32 controla AC #2
-- [ ] MQTT funciona
-- [ ] Backend funciona
-- [ ] Telegram funciona, con autorización por usuario
-- [ ] Telegram permite power, temperatura, modo, ventilador y swing
-- [ ] Expo consume la misma API y controla ambos aires
+- [ ] ESP32 conectado a WiFi y MQTT (o mock para desarrollar el bot)
+- [ ] Replay IR de power on/off; el aire responde
+- [ ] Backend + `POST .../power`
+- [ ] Telegram (long polling) enciende y apaga AC #1 y #2, con whitelist
+- [ ] Copy de “última orden”, nunca estado confirmado sin `reportedState`
 - [ ] El proyecto funciona con `MockTransport` sin hardware
+
+---
+
+## 17. Post-V1
+
+Temperatura, modo, ventilador, swing, programas, Expo como producto, webhook, hosting público, encoder COOLIX con estado, transporte Midea local.
 
 ---
 
 ## 18. Resultado esperado
 
-El usuario abre Telegram (o la app Expo, misma API) y controla los dos aires en local y en remoto, **sin abrir puertos**, gracias a la conexión MQTT saliente del ESP32.
-
-IR es el transporte del MVP. La aplicación no debe enterarse si un día se sustituye por Midea local / WiFi / UART.
+El usuario abre Telegram (en casa o fuera) y enciende o apaga los dos aires. El backend y el ESP32 están en casa. **No hay que abrir puertos** ni alquilar un servidor.
