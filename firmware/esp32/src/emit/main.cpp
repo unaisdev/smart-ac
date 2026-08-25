@@ -4,12 +4,13 @@
 
 void printMenu() {
   Serial.println();
-  Serial.println(F("=== Smart AC — Fase 3: prueba emisor IR (Johnson) ==="));
+  Serial.println(F("=== Smart AC — V1: emisor IR (power on/off) ==="));
   Serial.println(F("Apunta el LED IR al aire (GPIO 4)."));
   Serial.println();
-  Serial.println(F("Teclas:"));
+  Serial.println(F("Teclas V1 (producto):"));
   Serial.println(F("  1 = Apagar       (power-off)"));
   Serial.println(F("  2 = Encender     (power-on)"));
+  Serial.println(F("Teclas post-V1 (research, no producto):"));
   Serial.println(F("  3 = Subir temp   (temp-up)"));
   Serial.println(F("  4 = Bajar temp   (temp-down)"));
   Serial.println(F("  m = Este menu"));

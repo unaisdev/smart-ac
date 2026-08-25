@@ -189,11 +189,8 @@ void handleSetState(JsonObjectConst root) {
     return;
   }
 
-  // Temp/mode/fan: replay RAW no escala; ver docs/IR-JOHNSON.md
-  if (targetPower) {
-    Serial.println(
-        F("MQTT: only power IR in this build; temp/mode need COOLIX encoder"));
-  }
+  // V1: only state.power drives IR. Other fields are ignored (post-V1 encoder).
+  Serial.println(F("MQTT: V1 power IR only; other state fields ignored"));
 
   publishStateResponse(deviceId, requestId, true, state);
 }
@@ -226,7 +223,7 @@ void setup() {
 
   Serial.println();
   logLine(F("=== BOOT OK (mqtt) ==="));
-  Serial.println(F("Smart AC — Fases 4-5: WiFi + MQTT + IR (power)"));
+  Serial.println(F("Smart AC — V1: WiFi + MQTT + IR (power only)"));
 
   connectWifi();
   mqtt.setCallback(onMqttMessage);

@@ -17,6 +17,7 @@ build/
 firmware/esp32/.pio/
 firmware/esp32/.vscode/
 firmware/esp32/sdkconfig.old
+firmware/esp32/include/secrets.h
 
 # OS & editors
 .DS_Store
