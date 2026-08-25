@@ -2,10 +2,11 @@
 
 | Documento | Para qué |
 | --- | --- |
-| [SPECS.md](SPECS.md) | Qué construir: arquitectura, contratos, seguridad, MVP |
-| [BACKEND.md](BACKEND.md) | Backend: Fastify, SQLite, módulos, Telegram en el mismo proceso |
-| [DEPLOY.md](DEPLOY.md) | Qué corre 24/7 y cómo (Oracle Always Free, 0 €/mes) |
-| [PLAN.md](PLAN.md) | En qué orden: fases 0–9 y criterios de salida |
-| [MATERIALS.md](MATERIALS.md) | BOM, pines, cableado y presupuesto |
+| [SPECS.md](SPECS.md) | Qué construir: V1 = Telegram + encender/apagar, sin hosting público |
+| [BACKEND.md](BACKEND.md) | Backend: Fastify, SQLite, Telegram long polling |
+| [DEPLOY.md](DEPLOY.md) | V1 en casa (0 €) y opción nube post-V1 |
+| [PLAN.md](PLAN.md) | Fases y criterios de salida |
+| [MATERIALS.md](MATERIALS.md) | BOM, pines, cableado |
+| [IR-JOHNSON.md](IR-JOHNSON.md) | Protocolo IR (temp± es post-V1) |
 
 Contexto del repo: [`README.md`](../README.md) · [`CONTRIBUTING.md`](../CONTRIBUTING.md)

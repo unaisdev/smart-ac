@@ -1,21 +1,17 @@
 # `apps/backend`
 
-API REST, dominio y **bot de Telegram** (mismo proceso). Spec: [`docs/BACKEND.md`](../../docs/BACKEND.md). Despliegue: [`docs/DEPLOY.md`](../../docs/DEPLOY.md).
+API REST, dominio y **bot de Telegram** (mismo proceso). Cliente **V1**. Spec: [`docs/BACKEND.md`](../../docs/BACKEND.md). Despliegue en casa: [`docs/DEPLOY.md`](../../docs/DEPLOY.md).
 
-## Telegram (fase 7)
-
-Long polling local: no hace falta URL pública. En `.env`:
+V1: **encender y apagar**. Long polling local: no hace falta URL pública.
 
 ```env
 TELEGRAM_BOT_TOKEN=...          # @BotFather
 TELEGRAM_ALLOWED_USER_IDS=123456789
 ```
 
-El ID es el número de Telegram (`@userinfobot`), nunca el username. Luego `pnpm --filter @smart-ac/backend dev` o recrear el contenedor `backend`.
+El ID es el número de Telegram (`@userinfobot`), nunca el username. Luego `pnpm --filter @smart-ac/backend dev`.
 
-`/start` lista los aires. **Programar** o `/schedule` abre el wizard (hora + estado). Los botones cambian **estado deseado** (mock). Un usuario fuera de la whitelist recibe el mensaje de permiso denegado.
-
-Los mismos programas están en REST (`GET/POST/DELETE /api/schedules`) para Expo.
+`/start` lista los aires. Los botones **Encender / Apagar** cambian el estado deseado. Un usuario fuera de la whitelist recibe el mensaje de permiso denegado.
 
 ## Arranque local (sin Docker)
 
@@ -49,7 +45,7 @@ curl -s -X POST -H "Authorization: Bearer dev-secret-change-me" \
 pnpm compose:up
 ```
 
-Mosquitto queda en `127.0.0.1:1883` (usuario local `smartac` / `smartac`). Para hablar con un ESP32 real: `TRANSPORT=mqtt` en `.env`.
+Mosquitto queda en `127.0.0.1:1883`. Para hablar con un ESP32 real: `TRANSPORT=mqtt` en `.env`.
 
 ## Tests
 
