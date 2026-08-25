@@ -62,6 +62,11 @@ Temp± y encoder COOLIX **no** entran en V1. Ver pendiente en [`IR-JOHNSON.md`](
 
 **Objetivo:** el ESP32 se une a la red y reconecta solo si cae. Credenciales nunca en Git.
 
+**Salida:**
+
+- [x] Conexión estable (`esp32dev-mqtt`, `include/secrets.h`)
+- [x] Reconexión tras caída WiFi (loop no bloqueante)
+
 ---
 
 ## Fase 5 — MQTT
@@ -74,7 +79,10 @@ publish:   smartac/device/+/state
            smartac/device/+/status
 ```
 
-**Salida:** un `mosquitto_pub` enciende o apaga un aire. Publicar `success` + desired power (no fingir estado real).
+**Salida:**
+
+- [x] Un `mosquitto_pub` enciende o apaga un aire (`esp32dev-mqtt`). Publicar `success` + desired power (no fingir estado real).
+- [x] El dispositivo publica `state` y `status` / online
 
 ---
 

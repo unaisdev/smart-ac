@@ -1,14 +1,18 @@
 # `firmware/esp32`
 
-Firmware del ESP32-WROOM-32 (DevKit V1): captura IR, WiFi, MQTT y emisión IR.
+Firmware del ESP32-WROOM-32 (DevKit V1).
 
-**V1:** replay RAW de **power on/off**. Temp± y encoder COOLIX son post-V1 ([`IR-JOHNSON.md`](../../docs/IR-JOHNSON.md)).
+**Camino V1 soportado:** capturar el mando → emitir **power on/off** por serial → WiFi + MQTT que solo dispara IR de **encender/apagar**.
+
+Temp, modo y fan **no** forman parte de V1. El encoder COOLIX / protocolo Johnson es post-V1: [`docs/IR-JOHNSON.md`](../../docs/IR-JOHNSON.md).
 
 Conexionado: [`MATERIALS.md`](../../docs/MATERIALS.md). Plan: [`PLAN.md`](../../docs/PLAN.md).
 
-Credenciales WiFi/MQTT **nunca** se suben a Git.
+Credenciales WiFi/MQTT **nunca** se suben a Git (`include/secrets.h` está en `.gitignore`).
 
-## Fase 1 — Capturar el mando
+---
+
+## 1. Capturar el mando (`esp32dev`)
 
 ### Subir firmware
 
@@ -61,9 +65,9 @@ Si antes veias `COOLIX` y ahora solo basura, el **erase + upload** suele arregla
 
 ---
 
-## Fase 3 — Probar emisor IR (4 botones actuales)
+## 2. Emisor serial (`esp32dev-emit`) — V1: power on/off
 
-Capturas en [`captures/`](captures/). Como añadir más botones: [`captures/README.md`](captures/README.md).
+Capturas en [`captures/`](captures/). Las de **power-on** / **power-off** son el camino de producto V1. Los `temp-*.txt` se conservan para investigación post-V1; no los borres.
 
 ### Cableado mínimo del LED IR
 
@@ -81,18 +85,18 @@ GPIO **4** → resistencia **220 Ω** → ánodo LED IR → cátodo → **GND**.
    ```bash
    pio run -e esp32dev-emit -t upload
    ```
-4. Monitor 115200 → menú con teclas `1`–`4`.
+4. Monitor 115200.
 
-| Tecla | Acción |
-| --- | --- |
-| `1` | Apagar |
-| `2` | Encender |
-| `3` | Subir temp |
-| `4` | Bajar temp (RAW) |
+| Tecla | Acción | V1 |
+| --- | --- | --- |
+| `1` | Apagar (`power-off`) | **Soportado** |
+| `2` | Encender (`power-on`) | **Soportado** |
+| `3` | Subir temp (`temp-up`) | Post-V1 (research) |
+| `4` | Bajar temp (`temp-down`) | Post-V1 (research) |
 
-Power (`1`/`2`): **3** envíos RAW. Temp (`3`/`4`): **1** envío (un clic del mando).
+Power (`1`/`2`): **3** envíos RAW. Temp (`3`/`4`): **1** envío — replay RAW de un clic; no es el camino de producto V1.
 
-**Límite:** replay RAW solo sirve mientras el aire esté en el mismo estado que al capturar. Temp± repetidas requieren **generación COOLIX con estado** en el ESP32 — ver [`docs/IR-JOHNSON.md`](../../docs/IR-JOHNSON.md).
+Protocolo / encoder de temperatura: [`docs/IR-JOHNSON.md`](../../docs/IR-JOHNSON.md) (post-V1).
 
 Regenerar `signals_data.cpp` tras cambiar capturas:
 
@@ -104,3 +108,50 @@ python3 tools/regenerate_signals.py
 
 Entorno **`esp32dev`** + upload (firmware de recepción).
 
+---
+
+## 3. WiFi + MQTT (`esp32dev-mqtt`) — V1: solo power
+
+Entorno **`esp32dev-mqtt`**: WiFi, broker MQTT y emisión IR de **encender/apagar**. `setState` **solo lee `state.power`**; el resto de campos se ignora.
+
+### Credenciales locales
+
+```bash
+cp include/secrets.h.example include/secrets.h
+# Edita include/secrets.h (no se sube a Git)
+```
+
+Debe coincidir con tu Mosquitto local (ver `.env.example` en la raíz del monorepo).
+
+### Subir firmware MQTT
+
+```bash
+pio run -e esp32dev-mqtt -t upload
+pio device monitor -b 115200
+```
+
+Monitor: `=== BOOT OK (mqtt) ===`, IP WiFi, `MQTT: connected`.
+
+### Topics (controller `ac-controller`)
+
+| Topic | Dirección |
+| --- | --- |
+| `smartac/device/ac-controller/command` | ESP32 subscribe |
+| `smartac/device/ac-controller/state` | ESP32 publish respuesta |
+| `smartac/device/ac-controller/status` | ESP32 publish `{"online":true}` (LWT offline) |
+
+### Probar con Mosquitto
+
+Con el broker en marcha (`docker compose` o Mosquitto local):
+
+```bash
+mosquitto_pub -h 127.0.0.1 -p 1883 -u smartac -P smartac \
+  -t smartac/device/ac-controller/command \
+  -m '{"deviceId":"ac-salon","command":"setState","requestId":"test-1","state":{"power":true}}'
+```
+
+Apagar: mismo mensaje con `"power":false`.
+
+Campos extra en `state` (mode, temperature, fan, …) se aceptan en el JSON y **se ignoran**. Temp/modo/fan por IR es post-V1: [`docs/IR-JOHNSON.md`](../../docs/IR-JOHNSON.md).
+
+Payloads: [`docs/SPECS.md`](../../docs/SPECS.md) §8.
