@@ -1,19 +1,4 @@
-import type { AirConditionerView, AirMode, FanSpeed } from '@smart-ac/shared';
-
-const MODE_LABEL: Record<AirMode, string> = {
-  auto: 'AUTO',
-  cool: '❄️ COOL',
-  dry: '💧 DRY',
-  heat: '🔥 HEAT',
-  fan: '🌀 FAN',
-};
-
-const FAN_LABEL: Record<FanSpeed, string> = {
-  auto: 'AUTO',
-  low: 'LOW',
-  medium: 'MED',
-  high: 'HIGH',
-};
+import type { AirConditionerView } from '@smart-ac/shared';
 
 export function formatHomeText(airs: AirConditionerView[]): string {
   const lines = ['🏠 Mis aires', ''];
@@ -27,28 +12,11 @@ export function formatHomeText(airs: AirConditionerView[]): string {
 }
 
 export function formatControlText(air: AirConditionerView): string {
-  const state = air.desiredState;
-  const modeLine = state.power ? MODE_LABEL[state.mode] : '⏻ OFF';
-
-  return [
-    `${airIcon(air)} ${air.name}`,
-    '',
-    'Última orden:',
-    modeLine,
-    `🌡 ${state.temperature}°C`,
-    `🌀 ${FAN_LABEL[state.fan]}`,
-    `↕️ SWING ${state.swing ? 'ON' : 'OFF'}`,
-    `⚡ TURBO ${state.turbo ? 'ON' : 'OFF'}`,
-    `🌱 ECO ${state.eco ? 'ON' : 'OFF'}`,
-  ].join('\n');
+  return [`${airIcon(air)} ${air.name}`, '', formatDesiredOneLiner(air)].join('\n');
 }
 
 export function formatDesiredOneLiner(air: AirConditionerView): string {
-  const state = air.desiredState;
-  if (!state.power) {
-    return '⏻ OFF';
-  }
-  return `${MODE_LABEL[state.mode]} · ${state.temperature}°C`;
+  return air.desiredState.power ? 'Última orden: ON' : 'Última orden: OFF';
 }
 
 export function formatCommandResult(air: AirConditionerView, commandSent: boolean): string {

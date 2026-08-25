@@ -44,6 +44,18 @@ describe('HTTP API', () => {
     assert.equal(body.every((ac) => ac.reportedState === null), true);
   });
 
+  it('GET /api/air-conditioners/:id returns one unit', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/air-conditioners/ac-salon',
+      headers: { authorization: 'Bearer test-secret' },
+    });
+    assert.equal(response.statusCode, 200);
+    const body = response.json() as { id: string; desiredState: typeof DEFAULT_AIR_STATE };
+    assert.equal(body.id, 'ac-salon');
+    assert.deepEqual(body.desiredState, DEFAULT_AIR_STATE);
+  });
+
   it('POST power updates desiredState only', async () => {
     const response = await app.inject({
       method: 'POST',
@@ -59,82 +71,34 @@ describe('HTTP API', () => {
     };
     assert.equal(body.commandSent, true);
     assert.equal(body.desiredState.power, true);
-    assert.equal(body.desiredState.temperature, DEFAULT_AIR_STATE.temperature);
     assert.equal(body.reportedState, null);
   });
 
-  it('POST state rejects a partial body', async () => {
+  it('POST power rejects a missing boolean', async () => {
     const response = await app.inject({
       method: 'POST',
-      url: '/api/air-conditioners/ac-salon/state',
+      url: '/api/air-conditioners/ac-salon/power',
       headers: { authorization: 'Bearer test-secret' },
-      payload: { power: true },
+      payload: { power: 'on' },
     });
     assert.equal(response.statusCode, 400);
   });
 
-  it('GET /api/schedules rejects missing bearer', async () => {
-    const response = await app.inject({ method: 'GET', url: '/api/schedules' });
-    assert.equal(response.statusCode, 401);
-  });
+  it('removed V1 routes return 404', async () => {
+    const headers = { authorization: 'Bearer test-secret' };
+    const removed = [
+      { method: 'POST' as const, url: '/api/air-conditioners/ac-salon/state' },
+      { method: 'POST' as const, url: '/api/air-conditioners/ac-salon/temperature' },
+      { method: 'POST' as const, url: '/api/air-conditioners/ac-salon/mode' },
+      { method: 'POST' as const, url: '/api/air-conditioners/ac-salon/fan' },
+      { method: 'POST' as const, url: '/api/air-conditioners/ac-salon/swing' },
+      { method: 'GET' as const, url: '/api/schedules' },
+      { method: 'POST' as const, url: '/api/schedules' },
+    ];
 
-  it('POST /api/schedules creates, lists, and deletes a program', async () => {
-    const createResponse = await app.inject({
-      method: 'POST',
-      url: '/api/schedules',
-      headers: { authorization: 'Bearer test-secret' },
-      payload: {
-        airConditionerId: 'ac-salon',
-        repeat: 'once',
-        targetHour: 8,
-        targetMinute: 0,
-        leadMinutes: 60,
-        state: { ...DEFAULT_AIR_STATE, power: true, temperature: 24 },
-      },
-    });
-    assert.equal(createResponse.statusCode, 200);
-    const created = createResponse.json() as {
-      id: string;
-      executeHour: number;
-      executeMinute: number;
-      airConditionerId: string;
-    };
-    assert.equal(created.airConditionerId, 'ac-salon');
-    assert.equal(created.executeHour, 7);
-    assert.equal(created.executeMinute, 0);
-
-    const listResponse = await app.inject({
-      method: 'GET',
-      url: '/api/schedules',
-      headers: { authorization: 'Bearer test-secret' },
-    });
-    assert.equal(listResponse.statusCode, 200);
-    const listed = listResponse.json() as Array<{ id: string }>;
-    assert.equal(listed.some((item) => item.id === created.id), true);
-
-    const deleteResponse = await app.inject({
-      method: 'DELETE',
-      url: `/api/schedules/${created.id}`,
-      headers: { authorization: 'Bearer test-secret' },
-    });
-    assert.equal(deleteResponse.statusCode, 204);
-
-    const listAfter = await app.inject({
-      method: 'GET',
-      url: '/api/schedules',
-      headers: { authorization: 'Bearer test-secret' },
-    });
-    const remaining = listAfter.json() as Array<{ id: string }>;
-    assert.equal(remaining.some((item) => item.id === created.id), false);
-  });
-
-  it('POST /api/schedules rejects an invalid body', async () => {
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/schedules',
-      headers: { authorization: 'Bearer test-secret' },
-      payload: { airConditionerId: 'ac-salon', repeat: 'weekly' },
-    });
-    assert.equal(response.statusCode, 400);
+    for (const route of removed) {
+      const response = await app.inject({ ...route, headers, payload: {} });
+      assert.equal(response.statusCode, 404, route.url);
+    }
   });
 });

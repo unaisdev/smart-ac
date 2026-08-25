@@ -1,24 +1,12 @@
 import type { FastifyBaseLogger } from 'fastify';
 import { Bot, type Context } from 'grammy';
-import {
-  MAX_TEMPERATURE,
-  MIN_TEMPERATURE,
-  type AirMode,
-  type FanSpeed,
-} from '@smart-ac/shared';
 import type { Config } from '../config.ts';
 import type { AirConditionerService } from '../domain/air-conditioner-service.ts';
-import type { ScheduleService } from '../domain/schedule-service.ts';
 import { isAuthorizedTelegramUser } from './auth.ts';
 import { formatControlText, formatHomeText } from './copy.ts';
 import { editSafe } from './edit-message.ts';
 import { controlKeyboard, homeKeyboard } from './keyboards.ts';
 import { TelegramLiveViews } from './live-views.ts';
-import { handleScheduleCallback, replyScheduleWizard } from './schedule-bot.ts';
-import { WizardSessions } from './schedule-draft.ts';
-
-const MODES: readonly AirMode[] = ['auto', 'cool', 'dry', 'heat', 'fan'];
-const FANS: readonly FanSpeed[] = ['auto', 'low', 'medium', 'high'];
 
 export interface TelegramRuntime {
   stop(): Promise<void>;
@@ -27,7 +15,6 @@ export interface TelegramRuntime {
 export async function startTelegramBot(
   config: Config,
   service: AirConditionerService,
-  schedules: ScheduleService,
   logger: FastifyBaseLogger,
 ): Promise<TelegramRuntime | undefined> {
   const token = config.telegramBotToken;
@@ -44,7 +31,6 @@ export async function startTelegramBot(
   const allowed = config.telegramAllowedUserIds;
   const bot = new Bot(token);
   const live = new TelegramLiveViews();
-  const sessions = new WizardSessions();
   const stopListening = service.onChanged(async () => {
     await live.push(bot, service, logger);
   });
@@ -66,7 +52,7 @@ export async function startTelegramBot(
   });
   bot.command('help', async (ctx) => {
     await ctx.reply(
-      'Controla los aires con los botones.\n/start o /airs — lista\n/schedule o /programar — wizard (hora + estado)\n/status — última orden del aire elegido.',
+      'Controla los aires con los botones.\n/start o /airs — lista\n/status — última orden del aire elegido.',
     );
   });
   bot.command('airs', async (ctx) => {
@@ -75,29 +61,10 @@ export async function startTelegramBot(
   bot.command('status', async (ctx) => {
     await replyHome(ctx, service, live);
   });
-  bot.command('schedule', async (ctx) => {
-    await replyScheduleWizard(ctx, service, sessions, live);
-  });
-  bot.command('programar', async (ctx) => {
-    await replyScheduleWizard(ctx, service, sessions, live);
-  });
 
   bot.on('callback_query:data', async (ctx) => {
     const data = ctx.callbackQuery.data;
     try {
-      if (data.startsWith('prg:')) {
-        await handleScheduleCallback({
-          ctx,
-          data,
-          service,
-          schedules,
-          live,
-          sessions,
-          timeZone: config.timeZone,
-        });
-        return;
-      }
-
       if (data === 'l') {
         await editHome(ctx, service, live);
         return;
@@ -119,6 +86,7 @@ export async function startTelegramBot(
 
       const result = await applyAction(service, action);
       trackControl(ctx, live, action.id);
+      await editSafe(ctx, formatControlText(result), controlKeyboard(result));
       await ctx.answerCallbackQuery({
         text: result.commandSent ? 'Orden enviada' : 'Error al enviar',
       });
@@ -198,11 +166,7 @@ function chatMessageIds(ctx: Context): { chatId: number; messageId: number } | u
 type TelegramAction =
   | { type: 'show'; id: string }
   | { type: 'refresh'; id: string }
-  | { type: 'power'; id: string; power: boolean }
-  | { type: 'mode'; id: string; mode: AirMode }
-  | { type: 'temp'; id: string; delta: 1 | -1 }
-  | { type: 'fan'; id: string; fan: FanSpeed }
-  | { type: 'toggle'; id: string; field: 'swing' | 'turbo' | 'eco' | 'led' };
+  | { type: 'power'; id: string; power: boolean };
 
 function parseCallback(data: string): TelegramAction | undefined {
   const parts = data.split(':');
@@ -224,35 +188,6 @@ function parseCallback(data: string): TelegramAction | undefined {
       }
       return { type: 'power', id, power: raw === '1' };
     }
-    case 'm': {
-      const mode = parts[2];
-      if (!isMode(mode)) {
-        return undefined;
-      }
-      return { type: 'mode', id, mode };
-    }
-    case 't': {
-      const dir = parts[2];
-      if (dir !== '+' && dir !== '-') {
-        return undefined;
-      }
-      return { type: 'temp', id, delta: dir === '+' ? 1 : -1 };
-    }
-    case 'f': {
-      const fan = parts[2];
-      if (!isFan(fan)) {
-        return undefined;
-      }
-      return { type: 'fan', id, fan };
-    }
-    case 'w':
-      return { type: 'toggle', id, field: 'swing' };
-    case 'u':
-      return { type: 'toggle', id, field: 'turbo' };
-    case 'e':
-      return { type: 'toggle', id, field: 'eco' };
-    case 'd':
-      return { type: 'toggle', id, field: 'led' };
     default:
       return undefined;
   }
@@ -264,33 +199,6 @@ async function applyAction(service: AirConditionerService, action: TelegramActio
     case 'refresh':
       return { ...service.get(action.id), commandSent: true, requestId: '' };
     case 'power':
-      return service.patchState(action.id, { power: action.power });
-    case 'mode':
-      return service.patchState(action.id, { power: true, mode: action.mode });
-    case 'temp': {
-      const current = service.get(action.id);
-      const temperature = clampTemp(current.desiredState.temperature + action.delta);
-      return service.patchState(action.id, { temperature });
-    }
-    case 'fan':
-      return service.patchState(action.id, { fan: action.fan });
-    case 'toggle': {
-      const current = service.get(action.id);
-      return service.patchState(action.id, {
-        [action.field]: !current.desiredState[action.field],
-      });
-    }
+      return service.setPower(action.id, action.power);
   }
-}
-
-function isMode(value: string | undefined): value is AirMode {
-  return value !== undefined && (MODES as readonly string[]).includes(value);
-}
-
-function isFan(value: string | undefined): value is FanSpeed {
-  return value !== undefined && (FANS as readonly string[]).includes(value);
-}
-
-function clampTemp(value: number): number {
-  return Math.min(MAX_TEMPERATURE, Math.max(MIN_TEMPERATURE, value));
 }

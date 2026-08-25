@@ -11,7 +11,7 @@ TELEGRAM_ALLOWED_USER_IDS=123456789
 
 El ID es el número de Telegram (`@userinfobot`), nunca el username. Luego `pnpm --filter @smart-ac/backend dev`.
 
-`/start` lista los aires. Los botones **Encender / Apagar** cambian el estado deseado. Un usuario fuera de la whitelist recibe el mensaje de permiso denegado.
+`/start` lista los aires. Los botones **Encender** / **Apagar** envían la última orden deseada (mock o MQTT/IR); no confirman que el aparato esté realmente encendido. Un usuario fuera de la whitelist recibe el mensaje de permiso denegado.
 
 ## Arranque local (sin Docker)
 

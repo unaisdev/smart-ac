@@ -16,7 +16,7 @@ describe('telegram copy', () => {
     id: 'ac-salon',
     name: 'Salón',
     location: 'Salón',
-    desiredState: { ...DEFAULT_AIR_STATE, power: true, mode: 'cool', temperature: 24 },
+    desiredState: { ...DEFAULT_AIR_STATE, power: true },
     reportedState: null,
     online: false,
   };
@@ -32,19 +32,19 @@ describe('telegram copy', () => {
 
   it('shows last desired order, not confirmed AC state', () => {
     const text = formatControlText(salon);
-    assert.match(text, /Última orden/);
+    assert.match(text, /Última orden: ON/);
     assert.doesNotMatch(text, /está encendido/);
-    assert.match(text, /❄️ COOL/);
+    assert.doesNotMatch(text, /❄️/);
   });
 
-  it('summarizes off units as OFF', () => {
-    assert.equal(formatDesiredOneLiner(bedroom), '⏻ OFF');
+  it('summarizes off units as last order OFF', () => {
+    assert.equal(formatDesiredOneLiner(bedroom), 'Última orden: OFF');
   });
 
   it('lists both airs on the home screen', () => {
     const text = formatHomeText([salon, bedroom]);
     assert.match(text, /Salón/);
     assert.match(text, /Dormitorio/);
-    assert.match(text, /OFF/);
+    assert.match(text, /Última orden: OFF/);
   });
 });
