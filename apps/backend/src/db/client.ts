@@ -67,22 +67,7 @@ function migrate(db: SqliteDatabase): void {
       PRIMARY KEY (device_id, name)
     );
 
-    CREATE TABLE IF NOT EXISTS schedules (
-      id TEXT PRIMARY KEY,
-      air_conditioner_id TEXT NOT NULL,
-      enabled INTEGER NOT NULL,
-      repeat TEXT NOT NULL,
-      target_hour INTEGER NOT NULL,
-      target_minute INTEGER NOT NULL,
-      lead_minutes INTEGER NOT NULL,
-      execute_hour INTEGER NOT NULL,
-      execute_minute INTEGER NOT NULL,
-      next_execute_at TEXT NOT NULL,
-      last_fired_at TEXT,
-      state_json TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      FOREIGN KEY (air_conditioner_id) REFERENCES air_conditioners(id)
-    );
+    DROP TABLE IF EXISTS schedules;
   `);
 }
 

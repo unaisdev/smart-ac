@@ -43,6 +43,10 @@ export class AirConditionerService {
     return this.send(id, state);
   }
 
+  async setPower(id: string, power: boolean): Promise<CommandResult> {
+    return this.patchState(id, { power });
+  }
+
   async patchState(id: string, patch: Partial<AirState>): Promise<CommandResult> {
     const current = toView(this.loadOne(id));
     return this.send(id, mergeAirState(current.desiredState, patch));

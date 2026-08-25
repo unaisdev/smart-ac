@@ -31,13 +31,8 @@ describe('AirConditionerService', () => {
     }
   });
 
-  it('sends a full state without copying it to reportedState', async () => {
-    const next = {
-      ...DEFAULT_AIR_STATE,
-      power: true,
-      mode: 'cool' as const,
-      temperature: 24,
-    };
+  it('sends a full power state without copying it to reportedState', async () => {
+    const next = { power: true };
 
     const result = await service.setState('ac-salon', next);
     assert.equal(result.commandSent, true);
@@ -49,10 +44,15 @@ describe('AirConditionerService', () => {
     assert.equal(stored.reportedState, null);
   });
 
-  it('patches power onto the last desired state', async () => {
-    const result = await service.patchState('ac-dormitorio', { power: true });
+  it('setPower patches power onto the last desired state', async () => {
+    const result = await service.setPower('ac-dormitorio', true);
     assert.equal(result.desiredState.power, true);
-    assert.equal(result.desiredState.mode, DEFAULT_AIR_STATE.mode);
+    assert.equal(result.reportedState, null);
+  });
+
+  it('patchState({ power }) updates desiredState only', async () => {
+    const result = await service.patchState('ac-dormitorio', { power: false });
+    assert.equal(result.desiredState.power, false);
     assert.equal(result.reportedState, null);
   });
 

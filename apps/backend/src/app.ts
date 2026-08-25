@@ -1,14 +1,12 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Config } from './config.ts';
 import { AirConditionerService } from './domain/air-conditioner-service.ts';
-import { ScheduleService } from './domain/schedule-service.ts';
 import { openDatabase, type SqliteDatabase } from './db/client.ts';
 import { registerAirConditionerRoutes } from './http/air-conditioners.ts';
 import { registerApiAuth } from './http/auth.ts';
 import { registerEventRoutes } from './http/events.ts';
 import { HttpError } from './http/errors.ts';
 import { registerHealthRoutes } from './http/health.ts';
-import { registerScheduleRoutes } from './http/schedules.ts';
 import type { AirConditionerTransport } from './transport/air-conditioner-transport.ts';
 import { IrTransport, TransportError } from './transport/ir-transport.ts';
 import { MockAirConditionerTransport } from './transport/mock-air-conditioner-transport.ts';
@@ -18,7 +16,6 @@ export interface AppInstance {
   db: SqliteDatabase;
   transport: AirConditionerTransport;
   service: AirConditionerService;
-  schedules: ScheduleService;
 }
 
 export async function buildApp(
@@ -31,7 +28,6 @@ export async function buildApp(
   const db = openDatabase(overrides?.databaseUrl ?? config.databaseUrl);
   const transport = overrides?.transport ?? createTransport(config);
   const service = new AirConditionerService(db, transport);
-  const schedules = new ScheduleService(db, config.timeZone);
 
   const app = Fastify({
     logger: process.env.NODE_ENV !== 'test',
@@ -48,10 +44,9 @@ export async function buildApp(
   await registerApiAuth(app, config.apiSecret);
   await registerHealthRoutes(app, db, config.transport);
   await registerAirConditionerRoutes(app, service);
-  await registerScheduleRoutes(app, schedules);
   await registerEventRoutes(app, service);
 
-  return { app, db, transport, service, schedules };
+  return { app, db, transport, service };
 }
 
 export function createTransport(config: Config): AirConditionerTransport {
